@@ -84,6 +84,6 @@ class Distiller(nn.Module):
         ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
 
         G_diff = ICCS - ICCT
-        loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c*b) 
+        loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c) 
 
         return s_out, loss_distill
