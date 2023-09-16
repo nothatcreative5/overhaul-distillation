@@ -66,9 +66,24 @@ class Distiller(nn.Module):
         feat_num = len(t_feats)
 
         loss_distill = 0
-        for i in range(feat_num):
-            s_feats[i] = self.Connectors[i](s_feats[i])
-            loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
-                            / self.loss_divider[i]
+        # for i in range(feat_num):
+        #     s_feats[i] = self.Connectors[i](s_feats[i])
+        #     loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
+        #                     / self.loss_divider[i]
+
+        b, c, h, w = s_out.shape
+
+        s_logit = torch.reshape(s_out, (b, c, h*w))
+        t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+
+        # b x c x A  mul  b x A x c -> b x c x c
+        ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
+        ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
+
+        ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
+        ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+
+        G_diff = ICCS - ICCT
+        loss_distill = self.args.ic_lambda * (G_diff * G_diff).view(b, -1).sum() / (c*b) 
 
         return s_out, loss_distill
