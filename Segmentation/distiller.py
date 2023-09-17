@@ -142,4 +142,4 @@ class Distiller(nn.Module):
 
         # loss_distill = (U_S - U_T).pow(2).mean()
 
-        return s_out, loss_distill
+        return s_out, loss_distill * 1e4
