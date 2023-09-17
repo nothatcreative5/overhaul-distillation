@@ -118,7 +118,7 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
-            output, loss_distill = self.d_net(image)
+            output, loss_distill = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
             loss = loss_seg + loss_distill.sum() / batch_size * 0.1

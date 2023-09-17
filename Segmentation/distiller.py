@@ -59,22 +59,61 @@ class Distiller(nn.Module):
 
         self.loss_divider = [8, 4, 2, 1, 1, 4*4]
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         t_feats, t_out = self.t_net.extract_feature(x)
         s_feats, s_out = self.s_net.extract_feature(x)
         feat_num = len(t_feats)
 
         loss_distill = 0
+
+        'Overhaul'
         # for i in range(feat_num):
         #     s_feats[i] = self.Connectors[i](s_feats[i])
         #     loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
         #                     / self.loss_divider[i]
 
+
+        'ICKD'
+
+        # b, c, h, w = s_out.shape
+
+        # s_logit = torch.reshape(s_out, (b, c, h*w))
+        # t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+
+        # # b x c x A  mul  b x A x c -> b x c x c
+        # ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
+        # ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
+
+        # ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
+        # ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+
+        # G_diff = ICCS - ICCT
+        # loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c)
+
+
+        'Corrected ICKD'
+
+        y_cpy = y.clone().detach()
+        # y_cpy = torch.rand((b, h, w), device = 'cuda')
+        y_cpy[y_cpy == 255] = 0
+
         b, c, h, w = s_out.shape
 
         s_logit = torch.reshape(s_out, (b, c, h*w))
         t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+
+        y_cpy = torch.reshape(y_cpy, (b, h*w))
+
+        for i in range(b):
+            preds = torch.argmax(t_logit[i], dim = 0)
+            indices = y_cpy[i] != preds
+            val_mx = torch.max(t_logit[i]).detach()
+            val_mn = torch.min(t_logit[i]).detach()
+
+            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
+            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
+            t_logit[i][:, indices] = corrected_logits
 
         # b x c x A  mul  b x A x c -> b x c x c
         ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
