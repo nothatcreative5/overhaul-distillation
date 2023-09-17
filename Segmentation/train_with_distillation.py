@@ -121,7 +121,7 @@ class Trainer(object):
             output, loss_distill = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
-            loss = loss_seg + loss_distill.sum() / batch_size * 0.1
+            loss = loss_seg + loss_distill.sum() / batch_size
 
             loss.backward()
             optimizer.step()
