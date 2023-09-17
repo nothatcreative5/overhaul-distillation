@@ -127,11 +127,19 @@ class Distiller(nn.Module):
 
         'Unsupervised loss'
 
-        b,c,h,w = t_feats[3].shape
-        s_feats[3] = self.Connectors[3](s_feats[3])
-        U_S, _, _ = torch.pca_lowrank(s_feats[3].view(b, c, -1), q = 21)
-        U_T, _, _ = torch.pca_lowrank(t_feats[3].view(b, c, -1).detach(), q = 21)
+        for i in range(feat_num):
+            b,c,h,w = t_feats[i].shape
+            s_feats[i] = self.Connectors[i](s_feats[i])
+            U_S, _, _ = torch.pca_lowrank(s_feats[i].view(b, c, -1), q = 21)
+            U_T, _, _ = torch.pca_lowrank(t_feats[i].view(b, c, -1).detach(), q = 21)
+            loss_distill += (U_S - U_T).pow(2).mean() / self.loss_divider[i]
 
-        loss_distill = (U_S - U_T).pow(2).mean()
+
+        # b,c,h,w = t_feats[3].shape
+        # s_feats[3] = self.Connectors[3](s_feats[3])
+        # U_S, _, _ = torch.pca_lowrank(s_feats[3].view(b, c, -1), q = 21)
+        # U_T, _, _ = torch.pca_lowrank(t_feats[3].view(b, c, -1).detach(), q = 21)
+
+        # loss_distill = (U_S - U_T).pow(2).mean()
 
         return s_out, loss_distill
