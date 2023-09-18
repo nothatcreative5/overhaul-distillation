@@ -49,6 +49,9 @@ class Distiller(nn.Module):
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
+        encoder_layer = nn.TransformerEncoderLayer(d_model=s_channels[3], nhead=8, batch_first = True, dropout = 0.5)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
         for i, margin in enumerate(margins):
@@ -125,21 +128,34 @@ class Distiller(nn.Module):
         # G_diff = ICCS - ICCT
         # loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c)
 
-        'Unsupervised loss'
+        'SA loss'
+        layer = 3
+        b,c_T,h,w = t_feats[layer].shape
 
-        for i in range(feat_num):
-            b,c,h,w = t_feats[i].shape
-            s_feats[i] = self.Connectors[i](s_feats[i])
-            U_S, _, _ = torch.pca_lowrank(s_feats[i].view(b, c, -1), q = 21)
-            U_T, _, _ = torch.pca_lowrank(t_feats[i].view(b, c, -1).detach(), q = 21)
-            loss_distill += (U_S - U_T).pow(2).mean() / self.loss_divider[i]
+        M = h * w
+        TF = t_feats[layer].view(b, M, c_T)
 
+        X = torch.bmm(TF, TF.permute(0,2,1)) / np.sqrt(M)
+        X = F.softmax(X, dim = 2) 
 
-        # b,c,h,w = t_feats[3].shape
-        # s_feats[3] = self.Connectors[3](s_feats[3])
-        # U_S, _, _ = torch.pca_lowrank(s_feats[3].view(b, c, -1), q = 21)
-        # U_T, _, _ = torch.pca_lowrank(t_feats[3].view(b, c, -1).detach(), q = 21)
+        G = torch.einsum('bji, bik -> bjk', X, TF).view(b, h, w, c_T) + TF.view(b, h, w, c_T)
+        G = G.view(b, c_T, M)
 
-        # loss_distill = (U_S - U_T).pow(2).mean()
+        # normalize G
+        G = torch.nn.functional.normalize(G, dim = 1)
 
-        return s_out, loss_distill * 1e4
+        # change it for the student
+        c_S = 320
+    #    F_t = self.Connectors[3](self.encoder(s_feats[layer].view(b, M, c_S)).view(b, c_S, h, w))
+        encoded = self.encoder(torch.reshape(s_feats[layer], (b, M, c_S)))
+        F_t = self.Connectors[3](torch.reshape(encoded, (b, c_S, h, w)))
+
+    #    F_t = F_t.view(b, c_T, M)
+        F_t = torch.reshape(F_t, (b, c_T, M))
+
+        F_t = torch.nn.functional.normalize(F_t, dim = 1)
+        
+        SA_loss = torch.norm(G - F_t, dim = 1)
+        loss_distill = SA_loss.sum() / M
+
+        return s_out, loss_distill 
