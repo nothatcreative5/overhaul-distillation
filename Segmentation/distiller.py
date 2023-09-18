@@ -155,8 +155,8 @@ class Distiller(nn.Module):
         F_t = torch.reshape(F_t, (b, c_T, M))
 
         F_t = torch.nn.functional.normalize(F_t, dim = 1)
-        
+         
         SA_loss = torch.norm(G - F_t, dim = 1)
         loss_distill = SA_loss.sum() / M
 
-        return s_out, loss_distill * 0.1
+        return s_out, loss_distill
