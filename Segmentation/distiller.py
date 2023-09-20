@@ -154,7 +154,7 @@ class Distiller(nn.Module):
 
         F = torch.nn.functional.normalize(self.SAST(SF), dim = 2)
 
-        loss_distill = torch.nn.functional.mse_loss(G, F, reduction='mean')
+        loss_distill = torch.nn.functional.mse_loss(G, F, reduction='mean') * 1e3
 
 
         'Corrected ICKD'
