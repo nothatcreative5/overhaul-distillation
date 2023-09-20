@@ -157,6 +157,6 @@ class Distiller(nn.Module):
         F_t = torch.nn.functional.normalize(F_t, dim = 1)
          
         SA_loss = torch.norm(G - F_t, dim = 1)
-        loss_distill += SA_loss.sum() / M * 0.1
+        loss_distill += SA_loss.sum() / M * 0.2
 
         return s_out, loss_distill
