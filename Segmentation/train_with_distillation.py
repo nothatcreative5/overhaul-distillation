@@ -290,7 +290,7 @@ def main():
 
     if args.checkname is None:
         args.checkname = 'deeplab-'+str(args.backbone)
-    print(args)
+    # print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)
     print('Starting Epoch:', trainer.args.start_epoch)
