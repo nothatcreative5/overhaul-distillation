@@ -249,8 +249,8 @@ class Distiller(nn.Module):
             corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
             t_logit[i][:, indices] = corrected_logits
 
-        s_logit = F.softmax(s_out / self.temperature, dim=2)
-        t_logit = F.softmax(t_out / self.temperature, dim=2)
+        s_logit = F.softmax(s_out, dim=2)
+        t_logit = F.softmax(t_out, dim=2)
         kl = torch.nn.KLDivLoss(reduction="batchmean")
         ICCS = torch.empty((21,21)).cuda()
         ICCT = torch.empty((21,21)).cuda()
