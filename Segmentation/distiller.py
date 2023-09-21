@@ -146,9 +146,6 @@ class Distiller(nn.Module):
         s_logit = torch.reshape(s_out, (b, c, h*w))
         t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
 
-
-
-        print(y_cpy)
         ICAS = torch.zeros((c,c)).cuda()
         ICAT = torch.zeros((c,c)).cuda()
 
@@ -171,6 +168,7 @@ class Distiller(nn.Module):
         
         for i in range(c):
             indices = y_cpy == i
+            print(indices.sum(), i)
             ICAS[i] = torch.mean(s_logit[indices], dim = 0)
             ICAT[i] = torch.mean(t_logit[indices], dim = 0)
 
