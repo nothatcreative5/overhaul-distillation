@@ -109,52 +109,57 @@ class Distiller(nn.Module):
 
         loss_distill = 0
 
-        'Overhaul'
-        # for i in range(feat_num):
-        #     s_feats[i] = self.Connectors[i](s_feats[i])
-        #     loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
-        #                     / self.loss_divider[i]
+
+        def overhaul():
+            loss_distill = 0
+            for i in range(feat_num):
+                s_feats[i] = self.Connectors[i](s_feats[i])
+                loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
+                                / self.loss_divider[i]
+            return loss_distill
+                
+        def ICKD():
+            b, c, h, w = s_out.shape
+
+            s_logit = torch.reshape(s_out, (b, c, h*w))
+            t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+
+            # b x c x A  mul  b x A x c -> b x c x c
+            ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
+            ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
+
+            ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
+            ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+
+            G_diff = ICCS - ICCT
+            loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c)
+            return loss_distill
+        
 
 
-        'ICKD'
-
-        # b, c, h, w = s_out.shape
-
-        # s_logit = torch.reshape(s_out, (b, c, h*w))
-        # t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
-
-        # # b x c x A  mul  b x A x c -> b x c x c
-        # ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
-        # ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
-
-        # ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
-        # ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
-
-        # G_diff = ICCS - ICCT
-        # loss_distill = (G_diff * G_diff).view(b, -1).sum() / (c)
 
         'Original Self Attention'
-        b,c,h,w = t_feats[3].shape
+        # b,c,h,w = t_feats[3].shape
 
-        TF = t_feats[3] # b x c' x h x w
-        SF = s_feats[3] # b x c x h x w
+        # TF = t_feats[3] # b x c' x h x w
+        # SF = s_feats[3] # b x c x h x w
 
-        # h and w are the same
+        # # h and w are the same
         
-        M = h * w
+        # M = h * w
 
-        TF = TF.view(b,M,c)
+        # TF = TF.view(b,M,c)
 
-        X = torch.bmm(TF, TF.permute(0,2,1))
-        X = torch.softmax(X, dim = 2) 
+        # X = torch.bmm(TF, TF.permute(0,2,1))
+        # X = torch.softmax(X, dim = 2) 
 
-        G = torch.einsum('bjp, bpk -> bjk', X, TF) + TF
-        G = torch.nn.functional.normalize(G, dim = 2)
+        # G = torch.einsum('bjp, bpk -> bjk', X, TF) + TF
+        # G = torch.nn.functional.normalize(G, dim = 2)
 
 
-        F = torch.nn.functional.normalize(self.SAST(SF), dim = 2)
+        # F = torch.nn.functional.normalize(self.SAST(SF), dim = 2)
 
-        loss_distill = torch.nn.functional.mse_loss(G, F, reduction='mean') * 1e3
+        # loss_distill = torch.nn.functional.mse_loss(G, F, reduction='mean') * 1e3
 
 
         'Corrected ICKD'
@@ -219,5 +224,43 @@ class Distiller(nn.Module):
          
     #     SA_loss = torch.norm(G - F_t, dim = 1)
     #     loss_distill += SA_loss.sum() / M * 0.2
+
+
+        y_cpy = y.clone().detach()
+        # y_cpy = torch.rand((b, h, w), device = 'cuda')
+        y_cpy[y_cpy == 255] = 0
+
+        b, c, h, w = s_out.shape
+
+        y_cpy = torch.reshape(y_cpy, (b, h*w))
+
+        b, c, h, w = s_out.shape
+        s_logit = torch.reshape(s_out, (b, c, h*w))
+        t_logit = torch.reshape(t_out, (b, c, h*w))
+
+
+        for i in range(b):
+            preds = torch.argmax(t_logit[i], dim = 0)
+            indices = y_cpy[i] != preds
+            val_mx = torch.max(t_logit[i]).detach()
+            val_mn = torch.min(t_logit[i]).detach()
+
+            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
+            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
+            t_logit[i][:, indices] = corrected_logits
+
+        s_logit = F.softmax(s_out / self.temperature, dim=2)
+        t_logit = F.softmax(t_out / self.temperature, dim=2)
+        kl = torch.nn.KLDivLoss(reduction="batchmean")
+        ICCS = torch.empty((21,21)).cuda()
+        ICCT = torch.empty((21,21)).cuda()
+        for i in range(21):
+            for j in range(i, 21):
+                ICCS[j, i] = ICCS[i, j] = kl(s_logit[:, i], s_logit[:, j])
+                ICCT[j, i] = ICCT[i, j] = kl(t_logit[:, i], t_logit[:, j])
+
+        ICCS = torch.nn.functional.normalize(ICCS, dim = 1)
+        ICCT = torch.nn.functional.normalize(ICCT, dim = 1)
+        loss_distill = (ICCS - ICCT).pow(2).mean()/b
 
         return s_out, loss_distill
