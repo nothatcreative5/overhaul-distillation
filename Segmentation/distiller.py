@@ -162,6 +162,10 @@ class Distiller(nn.Module):
             t_logit[i][:, indices] = corrected_logits
 
         
+        s_logit = torch.permute(s_logit, (0,2,1))
+        t_logit = torch.permute(t_logit, (0,2,1))
+
+        
         for i in range(c):
             indices = y_cpy == i
             ICAS[i] = torch.mean(s_logit[indices], dim = 0)
