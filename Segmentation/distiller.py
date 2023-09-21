@@ -137,6 +137,39 @@ class Distiller(nn.Module):
         
 
 
+        y_cpy = y.clone().detach()
+        # y_cpy = torch.rand((b, h, w), device = 'cuda')
+        y_cpy[y_cpy == 255] = 0
+
+        b, c, h, w = s_out.shape
+
+        s_logit = torch.reshape(s_out, (b, c, h*w))
+        t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+
+        ICAS = torch.empty((21,21)).cuda()
+        ICAT = torch.empty((21,21)).cuda()
+
+        y_cpy = torch.reshape(y_cpy, (b, h*w))
+
+        for i in range(b):
+            preds = torch.argmax(t_logit[i], dim = 0)
+            indices = y_cpy[i] != preds
+            val_mx = torch.max(t_logit[i]).detach()
+            val_mn = torch.min(t_logit[i]).detach()
+
+            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
+            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
+            t_logit[i][:, indices] = corrected_logits
+
+        
+        for i in range(c):
+            indices = y_cpy == i
+            ICAS[i] = torch.mean(s_logit[indices], dim = 0)
+            ICAT[i] = torch.mean(t_logit[indices], dim = 0)
+
+        loss_distill = torch.nn.functional.mse_loss(ICAS, ICAT, reduction='mean')
+
+
 
         'Original Self Attention'
         # b,c,h,w = t_feats[3].shape
@@ -225,42 +258,5 @@ class Distiller(nn.Module):
     #     SA_loss = torch.norm(G - F_t, dim = 1)
     #     loss_distill += SA_loss.sum() / M * 0.2
 
-
-        y_cpy = y.clone().detach()
-        # y_cpy = torch.rand((b, h, w), device = 'cuda')
-        y_cpy[y_cpy == 255] = 0
-
-        b, c, h, w = s_out.shape
-
-        y_cpy = torch.reshape(y_cpy, (b, h*w))
-
-        b, c, h, w = s_out.shape
-        s_logit = torch.reshape(s_out, (b, c, h*w))
-        t_logit = torch.reshape(t_out, (b, c, h*w))
-
-
-        for i in range(b):
-            preds = torch.argmax(t_logit[i], dim = 0)
-            indices = y_cpy[i] != preds
-            val_mx = torch.max(t_logit[i]).detach()
-            val_mn = torch.min(t_logit[i]).detach()
-
-            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
-            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
-            t_logit[i][:, indices] = corrected_logits
-
-        s_logit = F.softmax(s_out, dim=2)
-        t_logit = F.softmax(t_out, dim=2)
-        kl = torch.nn.KLDivLoss(reduction="batchmean")
-        ICCS = torch.empty((21,21)).cuda()
-        ICCT = torch.empty((21,21)).cuda()
-        for i in range(21):
-            for j in range(i, 21):
-                ICCS[j, i] = ICCS[i, j] = kl(s_logit[:, i], s_logit[:, j])
-                ICCT[j, i] = ICCT[i, j] = kl(t_logit[:, i], t_logit[:, j])
-
-        ICCS = torch.nn.functional.normalize(ICCS, dim = 1)
-        ICCT = torch.nn.functional.normalize(ICCT, dim = 1)
-        loss_distill = (ICCS - ICCT).pow(2).mean()/b
 
         return s_out, loss_distill
