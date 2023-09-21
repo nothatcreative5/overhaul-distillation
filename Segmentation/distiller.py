@@ -103,7 +103,7 @@ class Distiller(nn.Module):
             return loss_distill
         
 
-        refined_s = self.cbam(s_feats[3])
+        refined_s = self.Connectors[3](self.cbam(s_feats[3]))
         refined_t = CBAM(t_feats[3].shape[1], model = 'teacher').cuda()(t_feats[3])
 
         loss_distill += distillation_loss(refined_s, refined_t.detach(), getattr(self, 'margin%d' % (3+1))) / self.loss_divider[3]
