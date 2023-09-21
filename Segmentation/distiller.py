@@ -173,6 +173,9 @@ class Distiller(nn.Module):
             ICAS[i] = torch.mean(s_logit[indices], dim = 0)
             ICAT[i] = torch.mean(t_logit[indices], dim = 0)
 
+        ICAS = torch.matmul(ICAS, torch.transpose(ICAS, 0, 1))
+        ICAT = torch.matmul(ICAT, torch.transpose(ICAT, 0, 1))
+
         loss_distill = torch.nn.functional.mse_loss(ICAS, ICAT, reduction='mean')
 
 
