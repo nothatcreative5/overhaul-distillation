@@ -56,7 +56,7 @@ class Distiller(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(d_model=s_channels[3], nhead=8, batch_first = True, dropout = 0.5)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
-        self.cbam = CBAM(s_channels[3], model = 'student')
+        self.cbam = CBAM(s_channels[3], model = 'student').cuda()
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -104,7 +104,7 @@ class Distiller(nn.Module):
         
 
         refined_s = self.cbam(s_feats[3])
-        refined_t = CBAM(t_feats[3].shape[1], model = 'teacher')(t_feats[3])
+        refined_t = CBAM(t_feats[3].shape[1], model = 'teacher').cuda()(t_feats[3])
 
         loss_distill += distillation_loss(refined_s, refined_t.detach(), getattr(self, 'margin%d' % (3+1))) / self.loss_divider[3]
         
