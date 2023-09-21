@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import norm
 import numpy as np
+from cbam import *
 import scipy
 
 import math
@@ -42,39 +43,6 @@ def get_margin_from_BN(bn):
     return torch.FloatTensor(margin).to(std.device)
 
 
-class SAST(nn.Module):
-   
-   def __init__(self, t_channel, s_channel):
-      super(SAST, self).__init__()
-
-      
-      self.B = nn.Conv2d(s_channel, s_channel, kernel_size = 3, padding = 1)
-      self.C = nn.Conv2d(s_channel, s_channel, kernel_size = 3, padding = 1)
-      self.D = nn.Conv2d(s_channel, s_channel, kernel_size = 3, padding = 1)
-      self.connector = nn.Conv2d(s_channel ,t_channel, kernel_size = 1)
-
-      self.alpha = 1
-
-
-   def forward(self, x):
-      b, c, h, w = x.shape
-      M = h * w
-      A_b = self.B(x).reshape(b, M, c)
-      A_c = self.C(x).reshape(b, M, c)
-      A_d = self.D(x).reshape(b, M, c)
-
-      # b x M x c * b x c x M = b x M x M
-      S = torch.bmm(A_b, A_c.permute(0,2,1))
-      # softmax along row
-      S = torch.softmax(S, dim = 2)
-
-      # 
-      E = self.alpha * torch.einsum('bjp, bpk -> bjk', S, A_d) + x.view(b, M, c)
-
-      E = E.view(b, c, h, w)
-        
-      return self.connector(E).view(b, M, -1)
-
 
 class Distiller(nn.Module):
     def __init__(self, t_net, s_net):
@@ -88,8 +56,7 @@ class Distiller(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(d_model=s_channels[3], nhead=8, batch_first = True, dropout = 0.5)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
-
-        self.SAST = SAST(t_channels[3], s_channels[3])
+        self.cbam = CBAM(s_channels[3], model = 'student')
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -136,48 +103,11 @@ class Distiller(nn.Module):
             return loss_distill
         
 
+        refined_s = self.cbam(s_feats[3])
+        refined_t = CBAM(t_feats[3].shape[1], model = 'teacher')(t_feats[3])
 
-        y_cpy = y.clone().detach()
-        # y_cpy = torch.rand((b, h, w), device = 'cuda')
-        y_cpy[y_cpy == 255] = 0
-
-        b, c, h, w = s_out.shape
-
-        s_logit = torch.reshape(s_out, (b, c, h*w))
-        t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
-
-        ICAS = torch.zeros((c,c)).cuda()
-        ICAT = torch.zeros((c,c)).cuda()
-
-        y_cpy = torch.reshape(y_cpy, (b, h*w))
-
-        for i in range(b):
-            preds = torch.argmax(t_logit[i], dim = 0)
-            indices = y_cpy[i] != preds
-            val_mx = torch.max(t_logit[i]).detach()
-            val_mn = torch.min(t_logit[i]).detach()
-
-            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
-            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
-            t_logit[i][:, indices] = corrected_logits
-
+        loss_distill += distillation_loss(refined_s, refined_t.detach(), getattr(self, 'margin%d' % (3+1))) / self.loss_divider[3]
         
-        s_logit = torch.permute(s_logit, (0,2,1))
-        t_logit = torch.permute(t_logit, (0,2,1))
-
-        
-        for i in range(c):
-            indices = y_cpy == i
-            if indices.sum() == 0:
-                continue
-            ICAS[i] = torch.mean(s_logit[indices], dim = 0)
-            ICAT[i] = torch.mean(t_logit[indices], dim = 0)
-
-        ICAS = torch.matmul(ICAS, torch.transpose(ICAS, 0, 1))
-        ICAT = torch.matmul(ICAT, torch.transpose(ICAT, 0, 1))
-
-        loss_distill = torch.nn.functional.mse_loss(ICAS, ICAT, reduction='mean')
-
 
 
         'Original Self Attention'
