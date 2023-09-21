@@ -109,7 +109,7 @@ class Distiller(nn.Module):
         refined_s = torch.nn.functional.normalize(refined_s, dim = 1)
         refined_t = torch.nn.functional.normalize(refined_t, dim = 1)
 
-        loss_distill = distillation_loss(refined_s, refined_t.detach(), getattr(self, 'margin%d' % (3+1))) / self.loss_divider[3]
+        loss_distill = distillation_loss(refined_s, refined_t.detach(), getattr(self, 'margin%d' % (3+1))) / self.loss_divider[3] * 1e-5
         
 
 
