@@ -146,8 +146,11 @@ class Distiller(nn.Module):
         s_logit = torch.reshape(s_out, (b, c, h*w))
         t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
 
-        ICAS = torch.empty((21,21)).cuda()
-        ICAT = torch.empty((21,21)).cuda()
+
+
+        print(y_cpy)
+        ICAS = torch.zeros((c,c)).cuda()
+        ICAT = torch.zeros((c,c)).cuda()
 
         y_cpy = torch.reshape(y_cpy, (b, h*w))
 
