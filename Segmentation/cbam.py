@@ -27,6 +27,7 @@ class ChannelGate(nn.Module):
     def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max'], model = 'student'):
         super(ChannelGate, self).__init__()
         self.gate_channels = gate_channels
+        self.model = model
         if model == 'student':
             self.mlp = nn.Sequential(
                 Flatten(),
@@ -59,7 +60,10 @@ class ChannelGate(nn.Module):
             else:
                 channel_att_sum = channel_att_sum + channel_att_raw
 
-        scale = F.sigmoid( channel_att_sum ).unsqueeze(2).unsqueeze(3).expand_as(x)
+        if self.model == 'student':
+            scale = F.sigmoid( channel_att_sum ).unsqueeze(2).unsqueeze(3).expand_as(x)
+        else:
+            scale = F.sigmoid(channel_att_sum)
         return x * scale
 
 def logsumexp_2d(tensor):
