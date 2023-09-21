@@ -168,7 +168,8 @@ class Distiller(nn.Module):
         
         for i in range(c):
             indices = y_cpy == i
-            print(indices.sum(), i)
+            if indices.sum() == 0:
+                continue
             ICAS[i] = torch.mean(s_logit[indices], dim = 0)
             ICAT[i] = torch.mean(t_logit[indices], dim = 0)
 
