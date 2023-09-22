@@ -127,7 +127,7 @@ class Trainer(object):
             
             alpha = (epoch + 1) / self.args.epochs
 
-            loss = alpha * (loss_seg + loss_ickd.sum()) + (1 - alpha) * loss_cbam.sum()
+            loss = alpha * (loss_seg + loss_ickd.sum() / batch_size) + (1 - alpha) * loss_cbam.sum() / batch_size
 
             loss.backward()
             optimizer.step()
@@ -136,7 +136,7 @@ class Trainer(object):
 
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
-        print(loss_seg, loss_cbam.sum(), loss_ickd.sum())
+        print(loss_seg, loss_cbam.sum() / batch_size, loss_ickd.sum() / batch_size)
 
         if self.args.no_val:
             # save checkpoint every epoch
