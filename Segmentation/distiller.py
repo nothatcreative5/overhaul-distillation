@@ -130,6 +130,8 @@ class Distiller(nn.Module):
             loss_cbam += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
                             / self.loss_divider[i] * 1e-4
             
+        loss_cbam = loss_cbam / 2
+            
 
         y_cpy = y.clone().detach()
         y_cpy[y_cpy == 255] = 0
