@@ -94,7 +94,7 @@ class Distiller(nn.Module):
         s_feats[3] = torch.nn.functional.normalize(s_feats[3], dim = 1)
         t_feats[3] = torch.nn.functional.normalize(t_feats[3], dim = 1)
 
-        loss_distill = torch.norm(s_feats[3] - t_feats[3], dim = 1).sum() / M
+        loss_distill = torch.norm(s_feats[3] - t_feats[3], dim = 1).sum() / M * 0.1
 
         
         # loss_cbam = 0
