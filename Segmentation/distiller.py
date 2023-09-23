@@ -55,7 +55,7 @@ class Distiller(nn.Module):
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
         # self.cbams = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(len(s_channels))])
-        self.attn = PAM_Module(s_channels[3], 'student')
+        self.attn = PAM_Module(s_channels[3], 'student').cuda()
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
