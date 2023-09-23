@@ -84,10 +84,10 @@ class Distiller(nn.Module):
                                 / self.loss_divider[i]
             return loss_distill
         
-        b, c, h, w = s_out.shape
+        b, c, h, w = t_feats[3].shape
         M = h * w
         s_feats[3] = self.Connectors[3](self.attn(s_feats[3])).view(b, c, -1)
-        t_feats[3] = PAM_Module(t_feats[3].shape[1], 'teacher').cuda()(t_feats[3]).view(b, t_feats[3].shape[1], -1).detach()
+        t_feats[3] = PAM_Module(t_feats[3].shape[1], 'teacher').cuda()(t_feats[3]).view(b, c, -1).detach()
 
 
 
