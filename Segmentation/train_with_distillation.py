@@ -125,9 +125,9 @@ class Trainer(object):
             loss_seg = self.criterion(output, target)
             # loss = loss_seg + loss_distill.sum() / batch_size
             
-            alpha = (epoch + 1) / self.args.epochs
+            # alpha = (epoch + 1) / self.args.epochs
 
-            loss = alpha * (loss_seg + loss_ickd.sum() / batch_size) + (1 - alpha) * loss_cbam.sum() / batch_size
+            loss = loss_seg + loss_ickd.sum() / batch_size + loss_cbam.sum() / batch_size
 
             loss.backward()
             optimizer.step()
