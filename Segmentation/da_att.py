@@ -27,12 +27,12 @@ class PAM_Module(Module):
             self.query_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
             self.key_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
             self.value_conv = Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
-            self.gamma = Parameter(torch.zeros(1))
+            self.gamma = Parameter(torch.zeros(1)).cuda()
         else:
             self.query_conv = Identity()
             self.key_conv = Identity()
             self.value_conv = Identity()
-            self.gamma = torch.ones(1)
+            self.gamma = torch.ones(1).cuda()
         self.model = model
 
         self.softmax = Softmax(dim=-1)
