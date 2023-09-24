@@ -55,7 +55,8 @@ class Distiller(nn.Module):
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
         # self.cbams = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(len(s_channels))])
-        self.attn = PAM_Module(s_channels[3], 'student').cuda()
+        # self.attn = PAM_Module(s_channels[3], 'student').cuda()
+        self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -84,17 +85,31 @@ class Distiller(nn.Module):
                                 / self.loss_divider[i]
             return loss_distill
         
-        b, c, h, w = t_feats[3].shape
-        M = h * w
-        s_feats[3] = self.Connectors[3](self.attn(s_feats[3])).view(b, c, -1)
-        t_feats[3] = PAM_Module(t_feats[3].shape[1], 'teacher').cuda()(t_feats[3]).view(b, c, -1).detach()
+        # b, c, h, w = t_feats[3].shape
+        # M = h * w
+        # s_feats[3] = self.Connectors[3](self.attn(s_feats[3])).view(b, c, -1)
+        # t_feats[3] = PAM_Module(t_feats[3].shape[1], 'teacher').cuda()(t_feats[3]).view(b, c, -1).detach()
 
 
 
-        s_feats[3] = torch.nn.functional.normalize(s_feats[3], dim = 1)
-        t_feats[3] = torch.nn.functional.normalize(t_feats[3], dim = 1)
+        # s_feats[3] = torch.nn.functional.normalize(s_feats[3], dim = 1)
+        # t_feats[3] = torch.nn.functional.normalize(t_feats[3], dim = 1)
 
-        loss_cbam = torch.norm(s_feats[3] - t_feats[3], dim = 1).sum() / M * 0.1
+        # loss_cbam = torch.norm(s_feats[3] - t_feats[3], dim = 1).sum() / M * 0.1
+
+        loss_cbam = 0
+
+        for i in range(3, feat_num):
+            b,c,h,w = t_feats[i].shape
+            M = h * w
+            s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
+            t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+
+            s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
+            t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
+
+            loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
+
 
         
         # loss_cbam = 0
