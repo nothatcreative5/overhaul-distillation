@@ -56,6 +56,7 @@ class Distiller(nn.Module):
 
         # self.cbams = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(len(s_channels))])
         # self.attn = PAM_Module(s_channels[3], 'student').cuda()
+
         self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
 
         teacher_bns = t_net.get_bn_before_relu()
@@ -129,35 +130,35 @@ class Distiller(nn.Module):
         # loss_cbam = loss_cbam / 2
             
 
-        y_cpy = y.clone().detach()
-        y_cpy[y_cpy == 255] = 0
+        # y_cpy = y.clone().detach()
+        # y_cpy[y_cpy == 255] = 0
 
-        b, c, h, w = s_out.shape
+        # b, c, h, w = s_out.shape
 
-        s_logit = torch.reshape(s_out, (b, c, h*w))
-        t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
+        # s_logit = torch.reshape(s_out, (b, c, h*w))
+        # t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
 
-        y_cpy = torch.reshape(y_cpy, (b, h*w))
+        # y_cpy = torch.reshape(y_cpy, (b, h*w))
 
-        for i in range(b):
-            preds = torch.argmax(t_logit[i], dim = 0)
-            indices = y_cpy[i] != preds
-            val_mx = torch.max(t_logit[i]).detach()
-            val_mn = torch.min(t_logit[i]).detach()
+        # for i in range(b):
+        #     preds = torch.argmax(t_logit[i], dim = 0)
+        #     indices = y_cpy[i] != preds
+        #     val_mx = torch.max(t_logit[i]).detach()
+        #     val_mn = torch.min(t_logit[i]).detach()
 
-            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
-            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
-            t_logit[i][:, indices] = corrected_logits
+        #     corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
+        #     corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
+        #     t_logit[i][:, indices] = corrected_logits
 
-        # b x c x A  mul  b x A x c -> b x c x c
-        ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
-        ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
+        # # b x c x A  mul  b x A x c -> b x c x c
+        # ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
+        # ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
 
-        ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
-        ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+        # ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
+        # ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
 
-        G_diff = ICCS - ICCT
-        loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c) * 0.1
-
+        # G_diff = ICCS - ICCT
+        # loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c) * 0.1
+        loss_ickd = torch.Tensor([0]).cuda()
 
         return s_out, loss_cbam, loss_ickd
