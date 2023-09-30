@@ -128,6 +128,10 @@ class Trainer(object):
             
             # alpha = (epoch + 1) / self.args.epochs
 
+            loss = loss_seg + loss_cbam.sum() / batch_size
+
+            loss += epoch / self.args.epochs * loss_ickd.sum() / batch_size
+
             loss = loss_seg + loss_ickd.sum() / batch_size + loss_cbam.sum() / batch_size
             # loss = loss_seg + loss_distill.sum() / batch_size
 

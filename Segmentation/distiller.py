@@ -158,7 +158,7 @@ class Distiller(nn.Module):
         ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
 
         G_diff = ICCS - ICCT
-        loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c)
+        loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c) * 0.1
         # loss_ickd = torch.Tensor([0]).cuda()
 
         return s_out, loss_cbam, loss_ickd
