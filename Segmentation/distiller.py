@@ -151,13 +151,13 @@ class Distiller(nn.Module):
             t_logit[i][:, indices] = corrected_logits
 
         # b x c x A  mul  b x A x c -> b x c x c
-        ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
-        ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
+        # ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
+        # ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
 
-        ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
-        ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+        # ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
+        # ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
 
-        G_diff = ICCS - ICCT
+        G_diff = t_logit - s_logit
         loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c) * 0.1
         # loss_ickd = torch.Tensor([0]).cuda()
 
