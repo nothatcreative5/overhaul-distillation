@@ -46,11 +46,15 @@ def get_margin_from_BN(bn):
 
 
 class Distiller(nn.Module):
-    def __init__(self, t_net, s_net):
+    def __init__(self, t_net, s_net, weight):
         super(Distiller, self).__init__()
 
         t_channels = t_net.get_channel_num()
         s_channels = s_net.get_channel_num()
+
+        self.weight = weight
+
+        self.crit = nn.CrossEntropyLoss(weight = self.weight, size_average = True).cuda()
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
@@ -143,22 +147,19 @@ class Distiller(nn.Module):
         for i in range(b):
             preds = torch.argmax(t_logit[i], dim = 0)
             indices = y_cpy[i] != preds
-            val_mx = torch.max(t_logit[i]).detach()
-            val_mn = torch.min(t_logit[i]).detach()
+            # val_mx = torch.max(t_logit[i]).detach()
+            # val_mn = torch.min(t_logit[i]).detach()
+            
+            val_mx = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = True)[0]).detach()
+            val_mn = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = False)[0]).detach()
 
             corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
             corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
             t_logit[i][:, indices] = corrected_logits
 
-        # b x c x A  mul  b x A x c -> b x c x c
-        # ICCT = torch.bmm(t_logit, t_logit.permute(0,2,1))
-        # ICCT = torch.nn.functional.normalize(ICCT, dim = 2)
 
-        # ICCS = torch.bmm(s_logit, s_logit.permute(0,2,1))
-        # ICCS = torch.nn.functional.normalize(ICCS, dim = 2)
+        t_logit = torch.softmax(t_logit, dim = 1)
 
-        G_diff = t_logit - s_logit
-        loss_ickd = (G_diff * G_diff).view(b, -1).sum() / (c) * 1e-5
-        # loss_ickd = torch.Tensor([0]).cuda()
+        loss_ickd = self.crit(s_logit, t_logit.detach())
 
         return s_out, loss_cbam, loss_ickd
