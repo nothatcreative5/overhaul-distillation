@@ -43,9 +43,7 @@ class Trainer(object):
                              freeze_bn=args.freeze_bn)
         
         
-        self.d_net = distiller.Distiller(self.t_net, self.s_net, weight =
-                                          calculate_weigths_labels(args.dataset, self.train_loader, self.nclass))
-
+        self.d_net = distiller.Distiller(self.t_net, self.s_net)
         print('Teacher Net: ')
         print(self.t_net)
         print('Student Net: ')

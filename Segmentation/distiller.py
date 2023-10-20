@@ -46,15 +46,13 @@ def get_margin_from_BN(bn):
 
 
 class Distiller(nn.Module):
-    def __init__(self, t_net, s_net, weight):
+    def __init__(self, t_net, s_net):
         super(Distiller, self).__init__()
 
         t_channels = t_net.get_channel_num()
         s_channels = s_net.get_channel_num()
 
-        self.weight = weight
-
-        self.crit = nn.CrossEntropyLoss(weight = self.weight, size_average = True).cuda()
+        self.crit = nn.CrossEntropyLoss(size_average = True).cuda()
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
@@ -149,7 +147,7 @@ class Distiller(nn.Module):
             indices = y_cpy[i] != preds
             # val_mx = torch.max(t_logit[i]).detach()
             # val_mn = torch.min(t_logit[i]).detach()
-            
+
             val_mx = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = True)[0]).detach()
             val_mn = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = False)[0]).detach()
 
