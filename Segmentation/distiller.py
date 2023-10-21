@@ -156,7 +156,7 @@ class Distiller(nn.Module):
             corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
             t_logit[i][:, indices] = corrected_logits
 
-            ignore_indices = y_cpy[i] != 255
+            ignore_indices = y_cpy[i] == 255
 
             t_logit[i][:, ignore_indices] = s_logit[i][:, ignore_indices]
 
