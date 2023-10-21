@@ -129,7 +129,9 @@ class Trainer(object):
             # With ickd
             # loss = loss_seg + loss_cbam.sum() / batch_size + loss_ickd.sum() / batch_size
 
-            loss = loss_seg + loss_cbam.sum() / batch_size + loss_ickd.sum() / batch_size * (50 - epoch) / 50
+            # loss = loss_seg + loss_cbam.sum() / batch_size + loss_ickd.sum() / batch_size * (50 - epoch) / 50
+
+            loss = loss_ickd.sum() / batch_size * (epoch) / 50 + loss_cbam.sum() / batch_size
 
 
             loss.backward()
