@@ -114,6 +114,12 @@ class Distiller(nn.Module):
             loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
 
+
+        pi_loss = 0
+        if self.args.pi_lambda is not None: # pixelwise loss
+          pi_loss =  self.args.pi_lambda * torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), F.softmax(t_out / self.temperature, dim=1))
+
+
         
         # loss_cbam = 0
 
@@ -130,39 +136,5 @@ class Distiller(nn.Module):
         #     loss_cbam += torch.nn.functional.mse_loss(s_feats[i],t_feats[i].detach() , reduction="none").sum() * 1e-5
             
         # loss_cbam = loss_cbam / 2
-            
 
-        y_cpy = y.clone().detach()
-        y_cpy[y_cpy == 255] = 0
-
-        b, c, h, w = s_out.shape
-
-        s_logit = torch.reshape(s_out, (b, c, h*w))
-        t_logit = torch.reshape(t_out, (b, c, h*w)).detach()
-
-        y_cpy = torch.reshape(y_cpy, (b, h*w))
-
-        for i in range(b):
-            preds = torch.argmax(t_logit[i], dim = 0)
-            indices = y_cpy[i] != preds
-
-            # val_mx = torch.max(t_logit[i]).detach()
-            # val_mn = torch.min(t_logit[i]).detach()
-
-            val_mx = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = True)[0]).detach()
-            val_mn = torch.mean(torch.topk(t_logit[i].flatten(), 4, largest = False)[0]).detach()
-
-            corrected_logits = torch.ones((c, indices.sum()), device = 'cuda') * val_mn
-            corrected_logits[y_cpy.long()[i][indices], torch.arange(indices.sum())] = val_mx
-            t_logit[i][:, indices] = corrected_logits
-
-            ignore_indices = y_cpy[i] == 255
-
-            t_logit[i][:, ignore_indices] = s_logit[i][:, ignore_indices]
-
-
-        t_logit = torch.softmax(t_logit, dim = 1)
-
-        loss_ickd = self.crit(s_logit, t_logit.detach())
-
-        return s_out, loss_cbam, loss_ickd
+        return s_out, loss_cbam, pi_loss

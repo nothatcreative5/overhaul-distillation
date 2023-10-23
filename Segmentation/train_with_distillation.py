@@ -121,7 +121,7 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
-            output, loss_cbam, loss_ickd = self.d_net(image, target)
+            output, loss_cbam, pi_loss = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
 
@@ -131,7 +131,11 @@ class Trainer(object):
 
             # loss = loss_seg + loss_cbam.sum() / batch_size + loss_ickd.sum() / batch_size * (50 - epoch) / 50
 
-            loss = loss_ickd.sum() / batch_size  + loss_cbam.sum() / batch_size
+            # loss = pi_loss.sum() / batch_size  + loss_cbam.sum() / batch_size
+
+            alpha = epoch / 50
+
+            loss = alpha * (loss_seg + loss_cbam.sum() / batch_size) + (1-alpha) * pi_loss.sum() / batch_size
 
 
             loss.backward()
@@ -141,7 +145,7 @@ class Trainer(object):
 
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
-        print(loss_seg, loss_cbam.sum() / batch_size, loss_ickd.sum() / batch_size)
+        print(loss_seg, loss_cbam.sum() / batch_size, pi_loss.sum() / batch_size)
         # print(loss_seg, loss_distill.sum() / batch_size)
 
         if self.args.no_val:
