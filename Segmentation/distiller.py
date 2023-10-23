@@ -60,6 +60,8 @@ class Distiller(nn.Module):
         # self.attn = PAM_Module(s_channels[3], 'student').cuda()
 
         self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
+        
+        self.temperature = 1
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
