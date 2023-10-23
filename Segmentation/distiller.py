@@ -114,10 +114,7 @@ class Distiller(nn.Module):
             loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
 
-
-        pi_loss = 0
-        if self.args.pi_lambda is not None: # pixelwise loss
-          pi_loss =  self.args.pi_lambda * torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), F.softmax(t_out / self.temperature, dim=1))
+        pi_loss = torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), F.softmax(t_out / self.temperature, dim=1))
 
 
         
