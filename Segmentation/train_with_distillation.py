@@ -135,7 +135,7 @@ class Trainer(object):
 
             alpha = epoch / 50
 
-            loss = alpha * (loss_seg + loss_cbam.sum() / batch_size) + (1-alpha) * pi_loss.sum() / batch_size
+            loss = alpha * (loss_seg) + (1-alpha) * (pi_loss.sum() / batch_size + loss_cbam.sum() / batch_size)
 
 
             loss.backward()
