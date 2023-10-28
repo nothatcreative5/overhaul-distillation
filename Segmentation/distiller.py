@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from scipy.stats import norm
 import numpy as np
 from cbam import *
+from dist_kd import DIST   
 from da_att import *
 import scipy
 
@@ -53,6 +54,7 @@ class Distiller(nn.Module):
         s_channels = s_net.get_channel_num()
 
         self.crit = nn.CrossEntropyLoss(size_average = True).cuda()
+        self.kd_crit = DIST().cuda()
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
@@ -116,7 +118,9 @@ class Distiller(nn.Module):
             loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
 
-        pi_loss = torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), F.softmax(t_out / self.temperature, dim=1)) * 10
+        # pi_loss = torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), F.softmax(t_out / self.temperature, dim=1)) * 10
+
+        dist_loss = self.kd_crit(s_out, t_out)
 
 
         
@@ -136,4 +140,4 @@ class Distiller(nn.Module):
             
         # loss_cbam = loss_cbam / 2
 
-        return s_out, loss_cbam, pi_loss
+        return s_out, loss_cbam, dist_loss
