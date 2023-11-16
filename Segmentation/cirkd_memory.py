@@ -19,7 +19,7 @@ class StudentSegContrast(nn.Module):
 
         self.project_head = nn.Sequential(
             nn.Conv2d(s_channels, t_channels, 1, bias=False),
-            nn.SyncBatchNorm(t_channels),
+            nn.BatchNorm(t_channels),
             nn.ReLU(True),
             nn.Conv2d(t_channels, t_channels, 1, bias=False)
         )
