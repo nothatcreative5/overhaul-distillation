@@ -75,8 +75,8 @@ class Distiller(nn.Module):
                                                      pixel_contrast_size=4096//num_class+1,
                                                      contrast_kd_temperature=1.0,
                                                      contrast_temperature=0.1,
-                                                     s_channels=s_channels[-1],
-                                                     t_channels=t_channels[-1], 
+                                                     s_channels=s_channels[-2],
+                                                     t_channels=t_channels[-2], 
                                                      ignore_label=255).cuda()
 
         self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
@@ -114,11 +114,11 @@ class Distiller(nn.Module):
         #     loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
         kd_loss = self.criterion_kd(s_out, t_out)
-        minibatch_pixel_contrast_loss = self.criterion_minibatch(s_feats[-1], t_feats[-1])
+        minibatch_pixel_contrast_loss = self.criterion_minibatch(s_feats[-2], t_feats[-2])
 
         _, predict = torch.max(s_out, dim=1) 
         memory_pixel_contrast_loss, memory_region_contrast_loss = \
-            self.criterion_memory_contrast(s_feats[-1], t_feats[-1].detach(), y, predict)
+            self.criterion_memory_contrast(s_feats[-2], t_feats[-2].detach(), y, predict)
         
         return s_out, kd_loss, minibatch_pixel_contrast_loss, \
             memory_pixel_contrast_loss, memory_region_contrast_loss
