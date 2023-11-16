@@ -75,8 +75,8 @@ class Distiller(nn.Module):
                                                      pixel_contrast_size=4096//num_class+1,
                                                      contrast_kd_temperature=1.0,
                                                      contrast_temperature=0.1,
-                                                     s_channels=s_channels,
-                                                     t_channels=t_channels, 
+                                                     s_channels=s_channels[-1],
+                                                     t_channels=t_channels[-1], 
                                                      ignore_label=255).cuda()
 
         self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
