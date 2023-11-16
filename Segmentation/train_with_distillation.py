@@ -268,6 +268,9 @@ def main():
     # evaluation option
     parser.add_argument('--eval-interval', type=int, default=1,
                         help='evaluuation interval (default: 1)')
+    
+    parser.add_argument('--local_rank', type=int, default=0)
+    
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
 
