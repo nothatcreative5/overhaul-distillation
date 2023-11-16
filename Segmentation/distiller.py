@@ -61,7 +61,7 @@ class Distiller(nn.Module):
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
 
-        img_rand = torch.rand(1, 3, 512, 512)
+        img_rand = torch.rand(2, 3, 512, 512)
         feat_t, _ = t_net.extract_feature(img_rand)
         num_class = feat_t[-1].shape[1]
 
