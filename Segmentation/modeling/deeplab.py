@@ -92,7 +92,12 @@ class DeepLab(nn.Module):
     
     def extract_cbam_features(self, input):
 
-        feats, x = self.extract_feature(input)
+        feats, x, low_level_feat = self.backbone.extract_feature(input)
+        feat, x = self.aspp.extract_feature(x)
+        feats += feat
+        feat, x = self.decoder.extract_feature(x, low_level_feat)
+        feats += feat
+        x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 
         for i in range(3, len(feats)):
             if self.model == 'student':
