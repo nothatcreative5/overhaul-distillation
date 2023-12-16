@@ -32,9 +32,9 @@ class Trainer(object):
                              backbone='resnet101',
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
-                             freeze_bn=args.freeze_bn)
-        checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar', 
-                                model = 'teacher')
+                             freeze_bn=args.freeze_bn,
+                             model = 'teacher')
+        checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar')
         self.t_net.load_state_dict(checkpoint['state_dict'])
 
         self.s_net = DeepLab(num_classes=self.nclass,
