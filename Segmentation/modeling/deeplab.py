@@ -24,7 +24,7 @@ class DeepLab(nn.Module):
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
         self.model = model
 
-        channels = self.backbone.get_channel_num()
+        channels = self.get_channel_num()
         if self.model == 'student':
             self.cbam = nn.ModuleList([CBAM(channels[i], model = model).cuda() for i in range(3, len(channels))])
 
@@ -92,12 +92,7 @@ class DeepLab(nn.Module):
     
     def extract_cbam_features(self, input):
 
-        feats, x, low_level_feat = self.backbone.extract_feature(input)
-        feat, x = self.aspp.extract_feature(x)
-        feats += feat
-        feat, x = self.decoder.extract_feature(x, low_level_feat)
-        feats += feat
-        x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
+        feats, x = self.extract_feature(input)
 
         for i in range(3, len(feats)):
             if self.model == 'student':
