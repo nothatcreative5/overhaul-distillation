@@ -129,11 +129,11 @@ class Trainer(object):
 
             output, cbam_loss = self.d_net(image, target)
 
-            # reduce all losses 
-            kd_loss = kd_loss.sum() / batch_size
-            minibatch_pixel_contrast_loss = minibatch_pixel_contrast_loss.sum() / batch_size
-            memory_pixel_contrast_loss = memory_pixel_contrast_loss.sum() / batch_size
-            memory_region_contrast_loss = memory_region_contrast_loss.sum() / batch_size
+            # # reduce all losses 
+            # kd_loss = kd_loss.sum() / batch_size
+            # minibatch_pixel_contrast_loss = minibatch_pixel_contrast_loss.sum() / batch_size
+            # memory_pixel_contrast_loss = memory_pixel_contrast_loss.sum() / batch_size
+            # memory_region_contrast_loss = memory_region_contrast_loss.sum() / batch_size
 
             cbam_loss = cbam_loss.sum() / batch_size
 
@@ -151,7 +151,8 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
 
-        print(loss_seg, kd_loss, minibatch_pixel_contrast_loss, memory_pixel_contrast_loss, memory_region_contrast_loss)
+        # print(loss_seg, kd_loss, minibatch_pixel_contrast_loss, memory_pixel_contrast_loss, memory_region_contrast_loss)
+        print(loss_seg, cbam_loss)
 
         if self.args.no_val:
             # save checkpoint every epoch
