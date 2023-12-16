@@ -33,7 +33,8 @@ class Trainer(object):
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
                              freeze_bn=args.freeze_bn)
-        checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar')
+        checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar', 
+                                model = 'teacher')
         self.t_net.load_state_dict(checkpoint['state_dict'])
 
         self.s_net = DeepLab(num_classes=self.nclass,
@@ -57,13 +58,13 @@ class Trainer(object):
         self.batch_size = args.batch_size
 
         distill_params = [{'params': self.s_net.get_1x_lr_params(), 'lr': args.lr},
-                          {'params': self.s_net.get_10x_lr_params(), 'lr': args.lr * 10},
-                          {'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
-                          {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
+                          {'params': self.s_net.get_10x_lr_params(), 'lr': args.lr * 10}]
+                        #   {'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
+                        #   {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
                         #   {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10},]
 
-        init_params = [{'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
-                       {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
+        init_params = [{'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},]
+                    #    {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
                     #    {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10}]
 
         # # Define Optimizer
@@ -123,8 +124,10 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
-            output, kd_loss, minibatch_pixel_contrast_loss, \
-            memory_pixel_contrast_loss, memory_region_contrast_loss = self.d_net(image, target)
+            # output, kd_loss, minibatch_pixel_contrast_loss, \
+            # memory_pixel_contrast_loss, memory_region_contrast_loss = self.d_net(image, target)
+
+            output, cbam_loss = self.d_net(image, target)
 
             # reduce all losses 
             kd_loss = kd_loss.sum() / batch_size
@@ -132,11 +135,12 @@ class Trainer(object):
             memory_pixel_contrast_loss = memory_pixel_contrast_loss.sum() / batch_size
             memory_region_contrast_loss = memory_region_contrast_loss.sum() / batch_size
 
+            cbam_loss = cbam_loss.sum() / batch_size
+
 
             loss_seg = self.criterion(output, target)
 
-            loss = loss_seg + kd_loss + minibatch_pixel_contrast_loss + memory_pixel_contrast_loss 
-            + memory_region_contrast_loss
+            loss = loss_seg + cbam_loss
 
 
             loss.backward()

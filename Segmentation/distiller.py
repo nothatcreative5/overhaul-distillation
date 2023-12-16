@@ -79,7 +79,7 @@ class Distiller(nn.Module):
                                                      t_channels=t_channels[-2], 
                                                      ignore_label=255).cuda()
 
-        self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
+        # self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
         
         self.temperature = 1
 
@@ -95,30 +95,24 @@ class Distiller(nn.Module):
 
     def forward(self, x, y):
 
-        t_feats, t_out = self.t_net.extract_feature(x)
-        s_feats, s_out = self.s_net.extract_feature(x)
-
-        feat_num = len(t_feats)
+        t_feats, t_out = self.t_net.extract_cbam_features(x)
+        s_feats, s_out = self.s_net.extract_cbam_features(x)
 
         loss_cbam = 0
 
-        # for i in range(3, feat_num):
-        #     b,c,h,w = t_feats[i].shape
-        #     M = h * w
-        #     s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
-        #     t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+        # enumerate the features and view and normalize them
 
-        #     s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
-        #     t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
+        for i in range(len(t_feats)):
+            b,c,h,w = t_feats[i].shape
+            M = h * w
+            s_feats[i] = self.Connectors[i](s_feats[i]).view(b, c, -1)
+            t_feats[i] = t_feats[i].view(b, c, -1).detach()
 
-        #     loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
+            s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
+            t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
 
-        kd_loss = self.criterion_kd(s_out, t_out)
-        minibatch_pixel_contrast_loss = self.criterion_minibatch(s_feats[-2], t_feats[-2])
+            loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
-        _, predict = torch.max(s_out, dim=1) 
-        memory_pixel_contrast_loss, memory_region_contrast_loss = \
-            self.criterion_memory_contrast(s_feats[-2], t_feats[-2].detach(), y, predict)
-        
-        return s_out, kd_loss, minibatch_pixel_contrast_loss, \
-            memory_pixel_contrast_loss, memory_region_contrast_loss
+
+
+        return s_out, loss_cbam

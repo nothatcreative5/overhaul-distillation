@@ -5,10 +5,11 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 from modeling.aspp import build_aspp
 from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
+from cbam import *
 
 class DeepLab(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21,
-                 sync_bn=True, freeze_bn=False):
+                 sync_bn=True, freeze_bn=False, model = 'student'):
         super(DeepLab, self).__init__()
         if backbone == 'drn':
             output_stride = 8
@@ -21,6 +22,9 @@ class DeepLab(nn.Module):
         self.backbone = build_backbone(backbone, output_stride, BatchNorm)
         self.aspp = build_aspp(backbone, output_stride, BatchNorm)
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
+
+        channels = self.backbone.get_channel_num()
+        self.cbam = nn.ModuleList([CBAM(channels[i], model = model).cuda() for i in range(3, len(channels))])
 
         if freeze_bn:
             self.freeze_bn()
@@ -51,7 +55,7 @@ class DeepLab(nn.Module):
                             yield p
 
     def get_10x_lr_params(self):
-        modules = [self.aspp, self.decoder]
+        modules = [self.aspp, self.decoder, self.cbam]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
@@ -82,5 +86,14 @@ class DeepLab(nn.Module):
         feats += feat
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 
+        return feats, x
+    
+    def extract_cbam_features(self, input):
+
+        feats, x = self.extract_feature(input)
+
+        for i in range(3, len(feats)):
+            feats[i] = self.cbam[i-3](feats[i])
+        
         return feats, x
 
