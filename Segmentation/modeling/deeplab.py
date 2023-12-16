@@ -22,6 +22,7 @@ class DeepLab(nn.Module):
         self.backbone = build_backbone(backbone, output_stride, BatchNorm)
         self.aspp = build_aspp(backbone, output_stride, BatchNorm)
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
+        self.model = model
 
         channels = self.backbone.get_channel_num()
         if self.model == 'student':
