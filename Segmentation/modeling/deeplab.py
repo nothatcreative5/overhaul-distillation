@@ -57,7 +57,7 @@ class DeepLab(nn.Module):
                             yield p
 
     def get_10x_lr_params(self):
-        modules = [self.aspp, self.decoder, self.cbam]
+        modules = [self.aspp, self.decoder]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
