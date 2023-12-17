@@ -95,18 +95,32 @@ class Distiller(nn.Module):
 
     def forward(self, x, y):
 
-        t_feats, t_out = self.t_net.extract_cbam_features(x)
-        s_feats, s_out = self.s_net.extract_cbam_features(x)
+        t_feats, t_out = self.t_net.extract_features(x)
+        s_feats, s_out = self.s_net.extract_features(x)
 
         loss_cbam = 0
 
+        # for i in range(3, feat_num):
+        #     b,c,h,w = t_feats[i].shape
+        #     M = h * w
+        #     s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
+        #     t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+
+        #     s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
+        #     t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
+
+        #     loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
+
         # enumerate the features and view and normalize them
 
-        for i in range(len(t_feats)):
+        for i in range(3, len(t_feats)):
             b,c,h,w = t_feats[i].shape
             M = h * w
+
+            s_feats[i] = self.s_net.cbam[i - 3](s_feats[i])
+            t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+
             s_feats[i] = self.Connectors[i](s_feats[i]).view(b, c, -1)
-            t_feats[i] = t_feats[i].view(b, c, -1).detach()
 
             s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
             t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
