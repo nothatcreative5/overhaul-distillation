@@ -90,9 +90,9 @@ class Trainer(object):
                                             args.epochs, len(self.train_loader))
 
         # Using cuda
-        if args.cuda:
-            self.s_net = torch.nn.DataParallel(self.s_net).cuda()
-            self.d_net = torch.nn.DataParallel(self.d_net).cuda()
+        # if args.cuda:
+            # self.s_net = torch.nn.DataParallel(self.s_net).cuda()
+            # self.d_net = torch.nn.DataParallel(self.d_net).cuda()
 
         # Resuming checkpoint
         self.best_pred = 0.0
