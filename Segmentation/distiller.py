@@ -102,3 +102,7 @@ class Distiller(nn.Module):
 
 
         return s_out, loss_cbam
+    
+
+    def get_cbam_modules(self):
+        return self.attns

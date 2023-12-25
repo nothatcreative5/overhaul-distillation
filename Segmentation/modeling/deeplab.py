@@ -90,9 +90,15 @@ class DeepLab(nn.Module):
 
         return feats, x
     
+
+    def set_cbam_modules(self, cbam_modules):
+        self.cbam_modules = cbam_modules
+    
     def extract_cbam_features(self, input):
         feats, _ = self.extract_feature(input)
         feat_num = len(feats)
+
+        print(self.cbam_modules)
 
         if self.is_student:
             if self.cbam_modules is None:

@@ -32,7 +32,8 @@ class Trainer(object):
                              backbone='resnet101',
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
-                             freeze_bn=args.freeze_bn)
+                             freeze_bn=args.freeze_bn,
+                             is_student = False)
         checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar')
         self.t_net.load_state_dict(checkpoint['state_dict'])
 
@@ -179,7 +180,16 @@ class Trainer(object):
         new_pred = mIoU
         if new_pred > self.best_pred:
             # add cbam to student
-            self.s_net.cbam_modules = self.d_net.module.attns
+            # self.s_net.cbam_modules = self.d_net.module.attns
+
+            print(self.s_net.cbam_modules)
+
+            self.s_net.set_cbam_modules(self.d_net.module.get_cbam_modules())
+
+            print(self.s_net.cbam_modules)
+
+            print('an')
+
             is_best = True
             self.best_pred = new_pred
             self.saver.save_checkpoint({
