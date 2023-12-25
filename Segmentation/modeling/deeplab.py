@@ -104,10 +104,12 @@ class DeepLab(nn.Module):
             if self.cbam_modules is None:
                 return None
             for i in range(3, feat_num):
-                feats[i] = self.cbam_modules[i-3](feats[i]).deatch()
+                b,c,h,w = feats[i].shape
+                feats[i] = self.cbam_modules[i-3](feats[i]).view(b, c, -1).detach()
                 feats[i] = torch.nn.functional.normalize(feats[i], dim = 1)
         else:
             for i in range(3, feat_num):
+                b,c,h,w = feats[i].shape
                 feats[i] = CBAM(feats[i].shape[1], model = 'teacher').cuda()(feats[i]).view(b, c, -1).detach()
                 feats[i] = torch.nn.functional.normalize(feats[i], dim = 1)
 
