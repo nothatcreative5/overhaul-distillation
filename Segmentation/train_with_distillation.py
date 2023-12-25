@@ -182,6 +182,8 @@ class Trainer(object):
             # add cbam to student
             # self.s_net.cbam_modules = self.d_net.module.attns
 
+            print(self.s_net.is_student, self.t_net.is_student)
+
             print(self.s_net.cbam_modules)
 
             self.s_net.set_cbam_modules(self.d_net.module.get_cbam_modules())
