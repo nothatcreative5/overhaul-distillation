@@ -90,9 +90,9 @@ class Trainer(object):
                                             args.epochs, len(self.train_loader))
 
         # Using cuda
-        # if args.cuda:
-            # self.s_net = torch.nn.DataParallel(self.s_net).cuda()
-            # self.d_net = torch.nn.DataParallel(self.d_net).cuda()
+        if args.cuda:
+            self.s_net = torch.nn.DataParallel(self.s_net).cuda()
+            self.d_net = torch.nn.DataParallel(self.d_net).cuda()
 
         # Resuming checkpoint
         self.best_pred = 0.0
@@ -182,13 +182,13 @@ class Trainer(object):
             # add cbam to student
             # self.s_net.cbam_modules = self.d_net.module.attns
 
-            print(self.s_net.is_student, self.t_net.is_student)
+            print(self.s_net.module.is_student, self.t_net.module.is_student)
 
-            print(self.s_net.cbam_modules)
+            print(self.s_net.module.cbam_modules)
 
-            self.s_net.set_cbam_modules(self.d_net.module.get_cbam_modules())
+            self.s_net.module.set_cbam_modules(self.d_net.module.get_cbam_modules())
 
-            print(self.s_net.cbam_modules)
+            print(self.s_net.module.cbam_modules)
 
             print('an')
 
