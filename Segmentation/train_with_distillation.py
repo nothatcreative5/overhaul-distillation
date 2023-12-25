@@ -136,9 +136,6 @@ class Trainer(object):
         print('Loss: %.3f' % train_loss)
         print(loss_seg, loss_cbam.sum() / batch_size)
 
-        # add cbam to student
-        self.s_net.cbam_modules = self.d_net.module.attns
-
         if self.args.no_val:
             # save checkpoint every epoch
             is_best = False
@@ -181,6 +178,8 @@ class Trainer(object):
 
         new_pred = mIoU
         if new_pred > self.best_pred:
+            # add cbam to student
+            self.s_net.cbam_modules = self.d_net.module.attns
             is_best = True
             self.best_pred = new_pred
             self.saver.save_checkpoint({
