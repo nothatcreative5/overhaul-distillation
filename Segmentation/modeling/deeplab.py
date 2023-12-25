@@ -9,7 +9,7 @@ from cbam import *
 
 class DeepLab(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21,
-                 sync_bn=True, freeze_bn=False, model = 'student'):
+                 sync_bn=True, freeze_bn=False, is_student = True):
         super(DeepLab, self).__init__()
         if backbone == 'drn':
             output_stride = 8
@@ -22,11 +22,11 @@ class DeepLab(nn.Module):
         self.backbone = build_backbone(backbone, output_stride, BatchNorm)
         self.aspp = build_aspp(backbone, output_stride, BatchNorm)
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
-        self.model = model
 
-        channels = self.get_channel_num()
-        if self.model == 'student':
-            self.cbam = nn.ModuleList([CBAM(channels[i], model = model).cuda() for i in range(3, len(channels))])
+        self.is_student = is_student
+
+        if self.is_student:
+            self.cbam_modules = None
 
         if freeze_bn:
             self.freeze_bn()
@@ -91,14 +91,19 @@ class DeepLab(nn.Module):
         return feats, x
     
     def extract_cbam_features(self, input):
+        feats, _ = self.extract_feature(input)
+        feat_num = len(feats)
 
-        feats, x = self.extract_feature(input)
+        if self.is_student:
+            if self.cbam_modules is None:
+                return None
+            for i in range(3, feat_num):
+                feats[i] = self.cbam_modules[i-3](feats[i]).deatch()
+                feats[i] = torch.nn.functional.normalize(feats[i], dim = 1)
+        else:
+            for i in range(3, feat_num):
+                feats[i] = CBAM(feats[i].shape[1], model = 'teacher').cuda()(feats[i]).view(b, c, -1).detach()
+                feats[i] = torch.nn.functional.normalize(feats[i], dim = 1)
 
-        for i in range(3, len(feats)):
-            if self.model == 'student':
-                feats[i] = self.cbam[i-3](feats[i])
-            else:
-                feats[i] = CBAM(feats[i].shape[1], model = 'teacher').cuda()(feats[i])
-        
-        return feats, x
+        return feats
 

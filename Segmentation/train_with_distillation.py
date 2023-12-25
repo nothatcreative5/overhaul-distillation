@@ -32,8 +32,7 @@ class Trainer(object):
                              backbone='resnet101',
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
-                             freeze_bn=args.freeze_bn,
-                             model = 'teacher')
+                             freeze_bn=args.freeze_bn)
         checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar')
         self.t_net.load_state_dict(checkpoint['state_dict'])
 
@@ -42,9 +41,8 @@ class Trainer(object):
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
                              freeze_bn=args.freeze_bn)
-        
-        
         self.d_net = distiller.Distiller(self.t_net, self.s_net)
+
         print('Teacher Net: ')
         print(self.t_net)
         print('Student Net: ')
@@ -59,15 +57,11 @@ class Trainer(object):
 
         distill_params = [{'params': self.s_net.get_1x_lr_params(), 'lr': args.lr},
                           {'params': self.s_net.get_10x_lr_params(), 'lr': args.lr * 10},
-                          {'params': self.s_net.cbam.parameters(), 'lr': args.lr * 10}]
-                        #   {'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
-                        #   {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
-                        #   {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10},]
+                          {'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
+                          {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10},]
 
         init_params = [{'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
-                       {'params': self.s_net.cbam.parameters(), 'lr': args.lr * 10}]
-                    #    {'params': self.d_net.criterion_memory_contrast.parameters(), 'lr': args.lr * 10}]
-                    #    {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10}]
+                       {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10}]
 
         # # Define Optimizer
         self.optimizer = torch.optim.SGD(distill_params, momentum=args.momentum,
@@ -126,24 +120,12 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
-            # output, kd_loss, minibatch_pixel_contrast_loss, \
-            # memory_pixel_contrast_loss, memory_region_contrast_loss = self.d_net(image, target)
 
-            output, cbam_loss = self.d_net(image, target)
-
-            # # reduce all losses 
-            # kd_loss = kd_loss.sum() / batch_size
-            # minibatch_pixel_contrast_loss = minibatch_pixel_contrast_loss.sum() / batch_size
-            # memory_pixel_contrast_loss = memory_pixel_contrast_loss.sum() / batch_size
-            # memory_region_contrast_loss = memory_region_contrast_loss.sum() / batch_size
-
-            cbam_loss = cbam_loss.sum() / batch_size
-
+            output, loss_cbam = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
 
-            loss = loss_seg + cbam_loss
-
+            loss = loss_seg + loss_cbam.sum() / batch_size
 
             loss.backward()
             optimizer.step()
@@ -152,9 +134,10 @@ class Trainer(object):
 
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
+        print(loss_seg, loss_cbam.sum() / batch_size)
 
-        # print(loss_seg, kd_loss, minibatch_pixel_contrast_loss, memory_pixel_contrast_loss, memory_region_contrast_loss)
-        print(loss_seg, cbam_loss)
+        # add cbam to student
+        self.s_net.cbam_modules = self.d_net.module.attns
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -205,6 +188,9 @@ class Trainer(object):
                 'state_dict': self.s_net.module.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+
+        features = self.s_net.module.extract_cbam_features(image)
+        print(features.shape)
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
@@ -275,9 +261,6 @@ def main():
     # evaluation option
     parser.add_argument('--eval-interval', type=int, default=1,
                         help='evaluuation interval (default: 1)')
-    
-    parser.add_argument('--local-rank', type=int, default=0)
-
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
 
