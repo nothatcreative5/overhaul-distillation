@@ -105,7 +105,14 @@ class Distiller(nn.Module):
             loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
 
 
-        return s_out, loss_cbam
+        loss_distill = 0
+        for i in range(feat_num):
+            s_feats[i] = self.Connectors[i](s_feats[i])
+            loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
+                            / self.loss_divider[i]
+
+
+        return s_out, loss_cbam, loss_distill
     
 
     def get_cbam_modules(self):
