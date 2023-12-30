@@ -135,7 +135,7 @@ class Trainer(object):
 
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
-        print(loss_seg, loss_distill.sum() / batch_size)
+        print(loss_seg, loss_distill.sum() / batch_size * 1e-5)
 
         if self.args.no_val:
             # save checkpoint every epoch
