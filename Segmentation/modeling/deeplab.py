@@ -98,8 +98,6 @@ class DeepLab(nn.Module):
         feats, _ = self.extract_feature(input)
         feat_num = len(feats)
 
-        print(self.cbam_modules)
-
         if self.is_student:
             if self.cbam_modules is None:
                 return None
