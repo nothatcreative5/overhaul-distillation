@@ -110,6 +110,7 @@ class Distiller(nn.Module):
             s_feats[i] = self.Connectors[i](s_feats[i])
             loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
                             / self.loss_divider[i]
+            print(loss_distill)
 
 
         return s_out, loss_cbam, loss_distill
