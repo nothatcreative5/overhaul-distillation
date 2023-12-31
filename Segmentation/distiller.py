@@ -92,11 +92,11 @@ class Distiller(nn.Module):
         for i in range(3, feat_num):
             b,c,h,w = t_feats[i].shape
             M = h * w
-            # s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
+            s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
             # t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
 
 
-            s_feats[i] = self.Connectors[i](s_feats[i])
+            # s_feats[i] = self.Connectors[i](s_feats[i])
             
 
             s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
