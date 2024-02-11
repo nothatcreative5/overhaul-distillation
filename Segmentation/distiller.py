@@ -46,7 +46,7 @@ def get_margin_from_BN(bn):
 
 
 class Distiller(nn.Module):
-    def __init__(self, t_net, s_net):
+    def __init__(self, t_net, s_net, args):
         super(Distiller, self).__init__()
 
         t_channels = t_net.get_channel_num()
@@ -66,6 +66,7 @@ class Distiller(nn.Module):
 
         self.t_net = t_net
         self.s_net = s_net
+        self.args = args
 
         self.loss_divider = [8, 4, 2, 1, 1, 4*4]
 
@@ -87,32 +88,24 @@ class Distiller(nn.Module):
             return loss_distill
         
 
-        loss_cbam = 0
+        loss_naive = 0
 
         for i in range(3, feat_num):
             b,c,h,w = t_feats[i].shape
             M = h * w
-            s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
-            t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+            # s_feats[i] = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
+            # t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
 
+            s_feats[i] = self.Connectors[i](s_feats[i])
 
-            # s_feats[i] = self.Connectors[i](s_feats[i])
-            
 
             s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
             t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
 
-            loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * 0.1
+            loss_naive += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / (M * b) * self.args.naive_lambda
 
 
-        # loss_distill = 0
-        # for i in range(feat_num):
-        #     s_feats[i] = self.Connectors[i](s_feats[i])
-        #     loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
-        #                     / self.loss_divider[i]
-
-
-        return s_out, loss_cbam
+        return s_out, loss_naive
     
 
     def get_cbam_modules(self):

@@ -42,7 +42,7 @@ class Trainer(object):
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
                              freeze_bn=args.freeze_bn)
-        self.d_net = distiller.Distiller(self.t_net, self.s_net)
+        self.d_net = distiller.Distiller(self.t_net, self.s_net, self.args)
 
         print('Teacher Net: ')
         print(self.t_net)
@@ -122,11 +122,11 @@ class Trainer(object):
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
 
-            output, loss_cbam = self.d_net(image, target)
+            output, loss_naive = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
 
-            loss = loss_seg + loss_cbam.sum() / batch_size
+            loss = loss_seg + loss_naive.sum()
 
             loss.backward()
             optimizer.step()
@@ -135,7 +135,7 @@ class Trainer(object):
 
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
-        print(loss_seg, loss_cbam.sum() / batch_size * 1e-5)
+        print(loss_seg, loss_naive.sum())
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -261,6 +261,10 @@ def main():
                         help='evaluuation interval (default: 1)')
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
+    
+    # loss coefficients
+    parser.add_argument('--naive_lambda', type=float, default=None,
+                        help='coefficient for naive loss')
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
