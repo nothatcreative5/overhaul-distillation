@@ -68,6 +68,8 @@ class Distiller(nn.Module):
         self.s_net = s_net
         self.args = args
 
+        self.temperature = 1.0
+
         self.loss_divider = [8, 4, 2, 1, 1, 4*4]
 
     def forward(self, x, y):
