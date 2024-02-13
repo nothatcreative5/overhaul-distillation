@@ -96,7 +96,7 @@ class Distiller(nn.Module):
         kd_loss = 0
 
         if self.args.kd_lambda is not None: # Kd loss
-          kd_loss =  self.args.kd_lambda * torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), 
+          kd_loss = self.args.kd_lambda * torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), 
                                                                 F.softmax(t_out / self.temperature, dim=1))
           
         
@@ -106,7 +106,7 @@ class Distiller(nn.Module):
             for i in range(3, feat_num):
                 b,c,h,w = t_feats[i].shape
 
-                (s_feats[i] / torch.norm(s_feats[i], p = 2) - t_feats[i] / torch.norm(t_feats[i], p = 2)).pow(2).sum() / (b) * self.args.lad_lambda
+                lad_loss += (s_feats[i] / torch.norm(s_feats[i], p = 2) - t_feats[i] / torch.norm(t_feats[i], p = 2)).pow(2).sum() / (b) * self.args.lad_lambda
 
         pad_loss = 0
 
@@ -139,7 +139,7 @@ class Distiller(nn.Module):
                 naive_loss += (s_feats[i] - t_feats[i]).pow(2).sum() / (h * w * c* b) * self.args.naive_lambda
 
 
-        return s_out, kd_loss.sum() , lad_loss.sum() , pad_loss.sum() , cad_loss.sum() , naive_loss.sum()
+        return s_out, kd_loss , lad_loss , pad_loss , cad_loss , naive_loss
     
 
     def get_cbam_modules(self):
