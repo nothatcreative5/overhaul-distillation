@@ -54,10 +54,7 @@ class Distiller(nn.Module):
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
-        # self.cbams = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(len(s_channels))])
-        # self.attn = PAM_Module(s_channels[3], 'student').cuda()
-
-        self.attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
+        self.attns = nn.ModuleList([CBAM(t_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -86,6 +83,29 @@ class Distiller(nn.Module):
                 loss_distill += distillation_loss(s_feats[i], t_feats[i].detach(), getattr(self, 'margin%d' % (i+1))) \
                                 / self.loss_divider[i]
             return loss_distill
+        
+
+        cbam_loss = 0
+
+        if self.args.cbam_lambda is not None: # CBAM loss
+            
+            for i in range(3, feat_num):
+                b,c,h,w = t_feats[i].shape
+                M = h * w
+
+                'Do it before passing through connector'
+
+                s_feats_cbam = self.Connectors[i](self.attns[i-3](s_feats[i])).view(b, c, -1)
+
+                'Do it after'
+                
+                # s_feats[i] = self.attns[i - 3](s_feats[i]).view(b, c, -1)
+
+
+                t_feats_cbam = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+                
+
+                cbam_loss += torch.norm(s_feats_cbam - t_feats_cbam, dim = 1).sum() / M * self.args.cbam_lambda
         
 
         # Let's do it at the beginning
@@ -139,7 +159,8 @@ class Distiller(nn.Module):
                 naive_loss += (s_feats[i] - t_feats[i]).pow(2).sum() / (h * w * c* b) * self.args.naive_lambda
 
 
-        return s_out, kd_loss , lad_loss , pad_loss , cad_loss , naive_loss
+        return s_out, kd_loss , lad_loss , pad_loss , cad_loss , naive_loss, cbam_loss 
+
     
 
     def get_cbam_modules(self):

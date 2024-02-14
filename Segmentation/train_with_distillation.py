@@ -122,11 +122,11 @@ class Trainer(object):
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
 
-            output, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss = self.d_net(image, target)
+            output, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
 
-            loss = loss_seg + naive_loss + kd_loss + lad_loss + pad_loss + cad_loss
+            loss = loss_seg + naive_loss + kd_loss + lad_loss + pad_loss + cad_loss + cbam_loss
 
             loss.backward()
             optimizer.step()
@@ -136,7 +136,7 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
 
-        print('Losses: seg: {}, kd: {}, lad: {}, pad: {}, cad: {}, naive: {}'.format(loss_seg, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss))
+        print('Losses: seg: {}, kd: {}, lad: {}, pad: {}, cad: {}, naive: {}, cbam: {}'.format(loss_seg, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss))
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -274,6 +274,8 @@ def main():
                         help = 'coefficient for pad loss')
     parser.add_argument('--cad_lambda', type = float, default = None,
                         help = 'coefficient for cad loss')
+    parser.add_argument('--cbam_lambda', type = float, default = None,
+                        help = 'coefficient for cbam loss')
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
