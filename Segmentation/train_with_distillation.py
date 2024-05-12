@@ -136,8 +136,9 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
 
-        print('Losses: seg: {}, kd: {}, lad: {}, pad: {}, cad: {}, naive: {}, cbam: {}'.format(loss_seg, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss))
+        # print('Losses: seg: {}, kd: {}, lad: {}, pad: {}, cad: {}, naive: {}, cbam: {}'.format(loss_seg, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss))
 
+        print('Losses: seg: {}, kd: {}, lad: {}, pad: {}, cad: {}, naive: {}, cbam: {}, self: {}'.format(loss_seg, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss, self_loss))
         if self.args.no_val:
             # save checkpoint every epoch
             is_best = False
