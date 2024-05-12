@@ -53,13 +53,14 @@ class Distiller(nn.Module):
         s_channels = s_net.get_channel_num()
 
 
-        self.layer_num = 4
+        self.start_layer = 3
+        self.end_layer = 4
 
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
         # self.cbam_attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
-        self.self_attns = nn.ModuleList([PAM_Module(s_channels[i], model = 'student').cuda() for i in range(self.layer_num, len(s_channels))])
+        self.self_attns = nn.ModuleList([PAM_Module(s_channels[i], model = 'student').cuda() for i in range(self.start_layer, self.end_layer)])
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -94,13 +95,13 @@ class Distiller(nn.Module):
 
         if self.args.cbam_lambda is not None: # CBAM loss
             
-            for i in range(3, feat_num):
+            for i in range(self.start_layer, self.end_layer):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
 
                 'Do it before passing through connector'
 
-                s_feats_cbam = self.Connectors[i](self.cbam_attns[i-3](s_feats[i])).view(b, c, -1)
+                s_feats_cbam = self.Connectors[i](self.cbam_attns[i-self.start_layer](s_feats[i])).view(b, c, -1)
 
                 'Do it after'
                 
@@ -116,11 +117,11 @@ class Distiller(nn.Module):
         self_att_loss = 0
 
         if self.args.self_att is not None: # Self attention loss
-            for i in range(self.layer_num, feat_num):
+            for i in range(self.start_layer, self.end_layer):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
 
-                s_feats_self = self.Connectors[i](self.self_attns[i - self.layer_num](s_feats[i])).view(b, c, -1)
+                s_feats_self = self.Connectors[i](self.self_attns[i - self.start_layer](s_feats[i])).view(b, c, -1)
 
                 t_feats_self = PAM_Module(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
 
