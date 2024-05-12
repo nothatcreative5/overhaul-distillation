@@ -115,6 +115,7 @@ class Distiller(nn.Module):
         if self.args.self_att is not None: # Self attention loss
             for i in range(3, feat_num):
                 b,c,h,w = t_feats[i].shape
+                M = h * w
 
                 s_feats_self = self.Connectors[i](self.self_attns[i-3](s_feats[i])).view(b, c, -1)
 
