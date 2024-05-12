@@ -92,7 +92,7 @@ class CAM_Module(Module):
     
 
 class Self_Att(Module):
-    def __init__(self, model, in_dim):
+    def __init__(self, in_dim, model = 'student'):
         super(Self_Att, self).__init__()
         self.PAM = PAM_Module(in_dim, model)
         self.CAM = CAM_Module(model)
