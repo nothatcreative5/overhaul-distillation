@@ -53,7 +53,7 @@ class Distiller(nn.Module):
         s_channels = s_net.get_channel_num()
 
 
-        self.layer_num = 2
+        self.layer_num = 4
 
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
