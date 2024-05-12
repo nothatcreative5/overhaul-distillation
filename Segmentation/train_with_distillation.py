@@ -122,11 +122,11 @@ class Trainer(object):
             self.scheduler(optimizer, i, epoch, self.best_pred)
             optimizer.zero_grad()
 
-            output, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss = self.d_net(image, target)
+            output, kd_loss, lad_loss, pad_loss, cad_loss, naive_loss, cbam_loss, self_loss = self.d_net(image, target)
 
             loss_seg = self.criterion(output, target)
 
-            loss = loss_seg + naive_loss + kd_loss + lad_loss + pad_loss + cad_loss + cbam_loss
+            loss = loss_seg + naive_loss + kd_loss + lad_loss + pad_loss + cad_loss + cbam_loss + self_loss
 
             loss.backward()
             optimizer.step()
@@ -182,6 +182,7 @@ class Trainer(object):
         if new_pred > self.best_pred:
 
             self.s_net.module.set_cbam_modules(self.d_net.module.get_cbam_modules())
+            self.s_net.module.set_attn_modules(self.d_net.module.get_attn_modules())
 
             is_best = True
             self.best_pred = new_pred
@@ -276,6 +277,8 @@ def main():
                         help = 'coefficient for cad loss')
     parser.add_argument('--cbam_lambda', type = float, default = None,
                         help = 'coefficient for cbam loss')
+    parser.add_argument('--self_att', type = float, default = None,
+                        help = 'coefficient for self attention loss')
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
