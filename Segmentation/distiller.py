@@ -55,7 +55,7 @@ class Distiller(nn.Module):
 
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
-        self.cbam_attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
+        # self.cbam_attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
         self.self_attns = nn.ModuleList([Self_Att(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
 
         teacher_bns = t_net.get_bn_before_relu()
@@ -89,25 +89,25 @@ class Distiller(nn.Module):
 
         cbam_loss = 0
 
-        if self.args.cbam_lambda is not None: # CBAM loss
+        # if self.args.cbam_lambda is not None: # CBAM loss
             
-            for i in range(3, feat_num):
-                b,c,h,w = t_feats[i].shape
-                M = h * w
+        #     for i in range(3, feat_num):
+        #         b,c,h,w = t_feats[i].shape
+        #         M = h * w
 
-                'Do it before passing through connector'
+        #         'Do it before passing through connector'
 
-                s_feats_cbam = self.Connectors[i](self.cbam_attns[i-3](s_feats[i])).view(b, c, -1)
+        #         s_feats_cbam = self.Connectors[i](self.cbam_attns[i-3](s_feats[i])).view(b, c, -1)
 
-                'Do it after'
+        #         'Do it after'
                 
-                # s_feats[i] = self.attns[i - 3](s_feats[i]).view(b, c, -1)
+        #         # s_feats[i] = self.attns[i - 3](s_feats[i]).view(b, c, -1)
 
 
-                t_feats_cbam = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+        #         t_feats_cbam = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
                 
 
-                cbam_loss += torch.norm(s_feats_cbam - t_feats_cbam, dim = 1).sum() / M * self.args.cbam_lambda
+        #         cbam_loss += torch.norm(s_feats_cbam - t_feats_cbam, dim = 1).sum() / M * self.args.cbam_lambda
         
 
         self_att_loss = 0
