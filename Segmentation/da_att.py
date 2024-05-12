@@ -23,8 +23,8 @@ class PAM_Module(Module):
         super(PAM_Module, self).__init__()
 
         if model == 'student':
-            self.query_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
-            self.key_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
+            self.query_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//16, kernel_size=1)
+            self.key_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//16, kernel_size=1)
             self.value_conv = Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
             self.gamma = Parameter(torch.zeros(1)).cuda()
         else:
