@@ -53,10 +53,13 @@ class Distiller(nn.Module):
         s_channels = s_net.get_channel_num()
 
 
+        self.layer_num = 2
+
+
         self.Connectors = nn.ModuleList([build_feature_connector(t, s) for t, s in zip(t_channels, s_channels)])
 
         # self.cbam_attns = nn.ModuleList([CBAM(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
-        self.self_attns = nn.ModuleList([Self_Att(s_channels[i], model = 'student').cuda() for i in range(3, len(s_channels))])
+        self.self_attns = nn.ModuleList([Self_Att(s_channels[i], model = 'student').cuda() for i in range(self.layer_num, len(s_channels))])
 
         teacher_bns = t_net.get_bn_before_relu()
         margins = [get_margin_from_BN(bn) for bn in teacher_bns]
@@ -113,12 +116,11 @@ class Distiller(nn.Module):
         self_att_loss = 0
 
         if self.args.self_att is not None: # Self attention loss
-            layer_num = 2
-            for i in range(layer_num, feat_num):
+            for i in range(self.layer_num, feat_num):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
 
-                s_feats_self = self.Connectors[i](self.self_attns[i - layer_num](s_feats[i])).view(b, c, -1)
+                s_feats_self = self.Connectors[i](self.self_attns[i - self.layer_num](s_feats[i])).view(b, c, -1)
 
                 t_feats_self = Self_Att(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
 
