@@ -182,7 +182,7 @@ class Trainer(object):
         new_pred = mIoU
         if new_pred > self.best_pred:
 
-            self.s_net.module.set_cbam_modules(self.d_net.module.get_cbam_modules())
+            # self.s_net.module.set_cbam_modules(self.d_net.module.get_cbam_modules())
             self.s_net.module.set_attn_modules(self.d_net.module.get_attn_modules())
 
             is_best = True
