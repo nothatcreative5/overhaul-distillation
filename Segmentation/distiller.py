@@ -117,7 +117,7 @@ class Distiller(nn.Module):
                 s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
                 t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
 
-                loss_cbam += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * self.args.cbam_lambda
+                cbam_loss += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * self.args.cbam_lambda
 
         ema_loss = 0 
 
