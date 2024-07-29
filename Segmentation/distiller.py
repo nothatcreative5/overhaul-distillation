@@ -106,18 +106,23 @@ class Distiller(nn.Module):
 
         if self.args.cbam_lambda is not None: # CBAM loss
             
-            for i in range(3, feat_num):
-
+            for i in range(self.start_layer, self.end_layer):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
-                s_feats[i] = self.Connectors[i](self.cbam_attns[i-3](s_feats[i])).view(b, c, -1)
-                t_feats[i] = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+
+                'Do it before passing through connector'
+
+                s_feats_cbam = self.Connectors[i](self.cbam_attns[i-self.start_layer](s_feats[i])).view(b, c, -1)
+
+                'Do it after'
+                
+                # s_feats[i] = self.attns[i - 3](s_feats[i]).view(b, c, -1)
+
+
+                t_feats_cbam = CBAM(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
                 
 
-                s_feats[i] = torch.nn.functional.normalize(s_feats[i], dim = 1)
-                t_feats[i] = torch.nn.functional.normalize(t_feats[i], dim = 1)
-
-                cbam_loss += torch.norm(s_feats[i] - t_feats[i], dim = 1).sum() / M * self.args.cbam_lambda
+                cbam_loss += torch.norm(s_feats_cbam - t_feats_cbam, dim = 1).sum() / M * self.args.cbam_lambda
 
         ema_loss = 0 
 
