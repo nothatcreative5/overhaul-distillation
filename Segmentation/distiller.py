@@ -149,8 +149,8 @@ class Distiller(nn.Module):
                 self_att_loss += torch.norm(s_feats_self - t_feats_self, dim = 1).sum() / M * self.args.self_att
 
         # Let's do it at the beginning
-        for i in range(feat_num):
-            s_feats[i] = self.Connectors[i](s_feats[i])
+        # for i in range(feat_num):
+            # s_feats[i] = self.Connectors[i](s_feats[i])
         
 
         kd_loss = 0
