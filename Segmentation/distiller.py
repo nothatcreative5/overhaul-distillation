@@ -125,11 +125,11 @@ class Distiller(nn.Module):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
 
-                # s_feats[i] = self.ema_attns[i](s_feats[i])
-
                 s_feats_att = self.Connectors[i](self.ema_attns[i - self.start_layer](s_feats[i])).view(b, c, -1)
-
                 t_feats_att = EMA(t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+
+                s_feats_att = torch.nn.functional.normalize(s_feats_att, dim=1)
+                t_feats_att = torch.nn.functional.normalize(t_feats_att, dim=1)
 
                 ema_loss += torch.norm(s_feats_att - t_feats_att, dim = 1).sum() / M * self.args.ema_lambda
         
