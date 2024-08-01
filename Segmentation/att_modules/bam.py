@@ -53,8 +53,8 @@ class BAM(nn.Module):
     def __init__(self, gate_channel, model = 'student'):
         super(BAM, self).__init__()
         print(gate_channel, type(gate_channel))
-        self.channel_att = ChannelGate(gate_channel, model)
-        self.spatial_att = SpatialGate(gate_channel, model)
+        self.channel_att = ChannelGate(gate_channel, model = model)
+        self.spatial_att = SpatialGate(gate_channel, model = model)
     def forward(self,in_tensor):
         att = 1 + F.sigmoid(self.channel_att(in_tensor) * self.spatial_att(in_tensor) )
         return att * in_tensor
