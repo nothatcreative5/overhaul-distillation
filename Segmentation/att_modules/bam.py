@@ -13,6 +13,7 @@ class ChannelGate(nn.Module):
         self.gate_c = nn.Sequential()
         self.gate_c.add_module( 'flatten', Flatten())
         self.model = model
+        print(gate_channel, reduction_ratio, type(reduction_ratio), type(gate_channel))
         gate_channels = [gate_channel]
         gate_channels += [gate_channel // reduction_ratio] * num_layers
         gate_channels += [gate_channel]
