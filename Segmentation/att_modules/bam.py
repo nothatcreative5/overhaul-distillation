@@ -13,7 +13,6 @@ class ChannelGate(nn.Module):
         self.gate_c = nn.Sequential()
         self.gate_c.add_module( 'flatten', Flatten())
         self.model = model
-        print(gate_channel, reduction_ratio, type(reduction_ratio), type(gate_channel))
         gate_channels = [gate_channel]
         gate_channels += [gate_channel // reduction_ratio] * num_layers
         gate_channels += [gate_channel]
@@ -52,7 +51,6 @@ class SpatialGate(nn.Module):
 class BAM(nn.Module):
     def __init__(self, gate_channel, model = 'student'):
         super(BAM, self).__init__()
-        print(gate_channel, type(gate_channel))
         self.channel_att = ChannelGate(gate_channel, model = model)
         self.spatial_att = SpatialGate(gate_channel, model = model)
     def forward(self,in_tensor):

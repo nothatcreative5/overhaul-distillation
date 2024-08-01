@@ -9,10 +9,11 @@ from att_modules.cbam import CBAM
 from att_modules.da_att import Self_Att
 from att_modules.ema import EMA
 from att_modules.bam import BAM
+from att_modules.attn_types import attn_types
 
 class DeepLab(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21,
-                 sync_bn=True, freeze_bn=False, is_student = True, args = None):
+                 sync_bn=True, freeze_bn=False, is_student = True, att_type = 'cbam'):
         super(DeepLab, self).__init__()
         if backbone == 'drn':
             output_stride = 8
@@ -26,14 +27,14 @@ class DeepLab(nn.Module):
         self.aspp = build_aspp(backbone, output_stride, BatchNorm)
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
 
-        self.attn_types = {
-            'cbam': CBAM,
-            'self': Self_Att,
-            'ema': EMA,
-            'bam': BAM
-        }
+        # self.attn_types = {
+        #     'cbam': CBAM,
+        #     'self': Self_Att,
+        #     'ema': EMA,
+        #     'bam': BAM
+        # }
 
-        self.args = args
+        self.att_type = att_type
 
         self.is_student = is_student
 
@@ -152,7 +153,7 @@ class DeepLab(nn.Module):
             else:
                 for i in range(3, feat_num):
                     b,c,h,w = feats[i].shape
-                    feats[i] = self.attn_types[self.args.att_type](feats[i].shape[1], model = 'teacher').cuda()(feats[i]).view(b, c, -1).detach()
+                    feats[i] = attn_types[self.att_type](feats[i].shape[1], model = 'teacher').cuda()(feats[i]).view(b, c, -1).detach()
                 
             return feats
     

@@ -34,7 +34,7 @@ class Trainer(object):
                              sync_bn=args.sync_bn,
                              freeze_bn=args.freeze_bn,
                              is_student = False,
-                             args = args)
+                             att_type=args.att_type)
         checkpoint = torch.load('pretrained/deeplab-resnet.pth.tar')
         self.t_net.load_state_dict(checkpoint['state_dict'])
 
@@ -43,7 +43,7 @@ class Trainer(object):
                              output_stride=args.out_stride,
                              sync_bn=args.sync_bn,
                              freeze_bn=args.freeze_bn,
-                             args = args)
+                             att_type=args.att_type)
         self.d_net = distiller.Distiller(self.t_net, self.s_net, self.args)
 
         print('Teacher Net: ')

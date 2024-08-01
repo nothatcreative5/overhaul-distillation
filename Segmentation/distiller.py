@@ -8,6 +8,7 @@ from att_modules.cbam import CBAM
 from att_modules.da_att import Self_Att
 from att_modules.ema import EMA
 from att_modules.bam import BAM
+from att_modules.attn_types import attn_types
 
 
 import scipy
@@ -64,12 +65,12 @@ class Distiller(nn.Module):
         self.start_layer = 3
         self.end_layer = len(t_channels)
 
-        self.attn_types = {
-            'cbam': CBAM,
-            'self': Self_Att,
-            'ema': EMA,
-            'bam': BAM
-        }
+        # self.attn_types = {
+        #     'cbam': CBAM,
+        #     'self': Self_Att,
+        #     'ema': EMA,
+        #     'bam': BAM
+        # }
 
         
         # Number of groups for emma attention module
@@ -88,7 +89,7 @@ class Distiller(nn.Module):
         # self.attns = nn.ModuleList(build_attention(s_channels, self.start_layer, args.att_type))
 
 
-        self.attns = [self.attn_types[args.att_type](s_channels[i], model = 'student').cuda() 
+        self.attns = [attn_types[args.att_type](s_channels[i], model = 'student').cuda() 
                       for i in range(self.start_layer, len(s_channels))]
         self.attns = nn.ModuleList(self.attns)
                     
@@ -182,7 +183,7 @@ class Distiller(nn.Module):
                 # t_feats_att = self.attns[i - self.start_layer](t_feats[i].shape[1], model = 'teacher').cuda()
                 # (t_feats[i]).view(b, c, -1).detach()
 
-                t_feats_att = self.attn_types[self.args.att_type](t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
+                t_feats_att = attn_types[self.args.att_type](t_feats[i].shape[1], model = 'teacher').cuda()(t_feats[i]).view(b, c, -1).detach()
 
                 s_feats_att = torch.nn.functional.normalize(s_feats_att, dim=1)
                 t_feats_att = torch.nn.functional.normalize(t_feats_att, dim=1)
