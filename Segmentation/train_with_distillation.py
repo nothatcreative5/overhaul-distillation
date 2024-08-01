@@ -62,15 +62,9 @@ class Trainer(object):
                           {'params': self.s_net.get_10x_lr_params(), 'lr': args.lr * 10},
                           {'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
                           {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10}]
-                        #   {'params': self.d_net.self_attns.parameters(), 'lr': args.lr * 10},
-                        #   {'params': self.d_net.cbam_attns.parameters(), 'lr': args.lr * 10},
-                        # {'params': self.d_net.ema_attns.parameters(), 'lr': args.lr * 10},]
 
         init_params = [{'params': self.d_net.Connectors.parameters(), 'lr': args.lr * 10},
                     {'params': self.d_net.attns.parameters(), 'lr': args.lr * 10}]
-                    #    {'params': self.d_net.self_attns.parameters(), 'lr': args.lr * 10},
-                    # {'params': self.d_net.cbam_attns.parameters(), 'lr': args.lr * 10},
-                    # {'params': self.d_net.ema_attns.parameters(), 'lr': args.lr * 10}]
 
         # # Define Optimizer
         self.optimizer = torch.optim.SGD(distill_params, momentum=args.momentum,
