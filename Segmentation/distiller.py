@@ -99,7 +99,7 @@ class Distiller(nn.Module):
         # self.attns = nn.ModuleList(build_attention(s_channels, self.start_layer, args.att_type))
 
 
-        self.attns = [self.attention_modules[args.att_type](s_channels[i], model = 'student').cuda() 
+        self.attns = [self.attn_types[args.att_type](s_channels[i], model = 'student').cuda() 
                       for i in range(self.start_layer, len(s_channels))]
         self.attns = nn.ModuleList(self.attns)
                     
