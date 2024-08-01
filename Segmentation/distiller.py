@@ -6,9 +6,7 @@ import numpy as np
 
 from att_modules.attn_types import attn_types
 
-
 import scipy
-
 import math
 
 def distillation_loss(source, target, margin):
@@ -55,7 +53,6 @@ class Distiller(nn.Module):
         t_channels = t_net.get_channel_num()
         s_channels = s_net.get_channel_num()
 
-        # Skip the layers of encoder (Here is Resnet)
         self.start_layer = 3
         self.end_layer = len(t_channels)
 
@@ -99,7 +96,7 @@ class Distiller(nn.Module):
 
         attn_loss = 0
 
-        if self.args.att_lambda is not None: # Attention loss
+        if self.args.att_lambda is not None:
             for i in range(self.start_layer, self.end_layer):
                 b,c,h,w = t_feats[i].shape
                 M = h * w
@@ -115,14 +112,14 @@ class Distiller(nn.Module):
 
         kd_loss = 0
 
-        if self.args.kd_lambda is not None: # Kd loss
+        if self.args.kd_lambda is not None:
           kd_loss = self.args.kd_lambda * torch.nn.KLDivLoss()(F.log_softmax(s_out / self.temperature, dim=1), 
                                                                 F.softmax(t_out / self.temperature, dim=1))
           
         
         lad_loss = 0
 
-        if self.args.lad_lambda is not None: # LAD loss
+        if self.args.lad_lambda is not None:
             for i in range(3, feat_num):
                 b,c,h,w = t_feats[i].shape
 
@@ -130,7 +127,7 @@ class Distiller(nn.Module):
 
         pad_loss = 0
 
-        if self.args.pad_lambda is not None: # PAD loss
+        if self.args.pad_lambda is not None:
             for i in range(3, feat_num):
                 b,c,h,w = t_feats[i].shape
 
@@ -140,7 +137,7 @@ class Distiller(nn.Module):
 
         cad_loss = 0
 
-        if self.args.cad_lambda is not None: # CAD loss
+        if self.args.cad_lambda is not None:
             for i in range(3, feat_num):
                 b,c,h,w = t_feats[i].shape
 
