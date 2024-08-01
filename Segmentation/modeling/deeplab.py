@@ -5,10 +5,6 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 from modeling.aspp import build_aspp
 from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
-from att_modules.cbam import CBAM
-from att_modules.da_att import Self_Att
-from att_modules.ema import EMA
-from att_modules.bam import BAM
 from att_modules.attn_types import attn_types
 
 class DeepLab(nn.Module):
