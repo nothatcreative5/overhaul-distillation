@@ -51,6 +51,7 @@ class SpatialGate(nn.Module):
 class BAM(nn.Module):
     def __init__(self, gate_channel, model = 'student'):
         super(BAM, self).__init__()
+        print(gate_channel, type(gate_channel))
         self.channel_att = ChannelGate(gate_channel, model)
         self.spatial_att = SpatialGate(gate_channel, model)
     def forward(self,in_tensor):
