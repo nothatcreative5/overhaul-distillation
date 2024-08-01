@@ -8,6 +8,7 @@ from modeling.backbone import build_backbone
 from att_modules.cbam import CBAM
 from att_modules.da_att import Self_Att
 from att_modules.ema import EMA
+from att_modules.bam import BAM
 
 class DeepLab(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21,
@@ -28,7 +29,8 @@ class DeepLab(nn.Module):
         self.attn_types = {
             'cbam': CBAM,
             'self': Self_Att,
-            'ema': EMA
+            'ema': EMA,
+            'bam': BAM
         }
 
         self.args = args

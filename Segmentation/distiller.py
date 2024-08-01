@@ -7,6 +7,7 @@ import numpy as np
 from att_modules.cbam import CBAM
 from att_modules.da_att import Self_Att
 from att_modules.ema import EMA
+from att_modules.bam import BAM
 
 
 import scipy
@@ -32,19 +33,6 @@ def build_feature_connector(t_channel, s_channel):
             m.bias.data.zero_()
 
     return nn.Sequential(*C)
-
-
-def build_attention(s_channels, start_layer = 3, att_type = 'cbam'):
-    if att_type == 'cbam':
-        return [CBAM(s_channels[i], model = 'student').cuda() for i in range(start_layer, len(s_channels))]
-    elif att_type == 'self':
-        return [Self_Att(s_channels[i], model = 'student').cuda() for i in range(start_layer, len(s_channels))]
-    elif att_type == 'ema':
-        return [EMA(s_channels[i], model = 'student').cuda() for i in range(start_layer, len(s_channels))]
-    else:
-        return [None for i in range(start_layer, len(s_channels))]
-
-
 
 
 def get_margin_from_BN(bn):
@@ -79,7 +67,8 @@ class Distiller(nn.Module):
         self.attn_types = {
             'cbam': CBAM,
             'self': Self_Att,
-            'ema': EMA
+            'ema': EMA,
+            'bam': BAM
         }
 
         
