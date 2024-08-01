@@ -198,7 +198,7 @@ class Distiller(nn.Module):
                 s_feats_att = torch.nn.functional.normalize(s_feats_att, dim=1)
                 t_feats_att = torch.nn.functional.normalize(t_feats_att, dim=1)
 
-                attn_loss += torch.norm(s_feats_att - t_feats_att, dim = 1).sum() / M * self.args.att
+                attn_loss += torch.norm(s_feats_att - t_feats_att, dim = 1).sum() / M * self.args.att_lambda
         
 
         kd_loss = 0
